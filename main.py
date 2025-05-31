@@ -99,7 +99,8 @@ def train(
         precision=32,
         max_epochs=max_epochs,
         callbacks=callbacks,
-        log_every_n_steps=log_every_n_steps
+        log_every_n_steps=log_every_n_steps,
+        strategy=DDPStrategy(find_unused_parameters=True)
     )
 
     logger.debug("start training")
