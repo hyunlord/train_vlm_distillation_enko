@@ -4,7 +4,7 @@ from typer import Option, Typer
 
 from loguru import logger
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichProgressBar, ProgressBar
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichProgressBar
 
 from app.dataset import KoSiglipDataModule
 from app.module import KoSiglipModule
@@ -87,7 +87,7 @@ def train(
     )
 
     checkpoints = ModelCheckpoint(monitor="train/loss_epoch", save_last=True)
-    callbacks = [checkpoints, ProgressBar(), LearningRateMonitor()]
+    callbacks = [checkpoints, RichProgressBar(), LearningRateMonitor()]
     if seed is not None:
         pl.seed_everything(seed)
         logger.debug(f"set seed: {seed}")
