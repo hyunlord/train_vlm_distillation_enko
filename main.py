@@ -45,7 +45,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         batch_size: int = Option(
-            32,
+            16,
             "-b", "--batch-size",
             min=1, help="batch size", rich_help_panel="model"
         ),
@@ -95,7 +95,7 @@ def train(
     logger.debug("set trainer")
     trainer = pl.Trainer(
         accelerator="auto",
-        precision=32,
+        precision='16-mixed',
         fast_dev_run=True,
         max_epochs=max_epochs,
         callbacks=callbacks,
