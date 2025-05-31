@@ -9,7 +9,7 @@ from .util import create_optimizer
 
 class KoSiglipModule(pl.LightningModule):
     def __init__(self, teacher_model_name: str, student_model_name: str, optimizer: str="adamw", learning_rate: float=5e-4, weight_decay: float=1e-4):
-        super().__iniit__()
+        super().__init__()
         self.save_hyperparameters()
 
         self.teacher_model_name = teacher_model_name
