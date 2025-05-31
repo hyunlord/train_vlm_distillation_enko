@@ -109,5 +109,3 @@ class KoSiglipModule(pl.LightningModule):
 
     def save(self, save_dir: str="save/model"):
         self.student.save_pretrained(save_dir)
-        processor = AutoProcessor.from_pretrained(self.student_model_name)
-        processor.save_pretrained(save_dir)
