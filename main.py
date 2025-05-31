@@ -47,7 +47,7 @@ def train(
         batch_size: int = Option(
             32,
             "-b", "--batch-size",
-            min=1, helf="batch size", rich_help_panel="model"
+            min=1, help="batch size", rich_help_panel="model"
         ),
         num_workers: int = Option(
             0, min=0,

@@ -1,6 +1,3 @@
-import sys
-print(f"app/module.py sys.path: {sys.path}")
-
 import inspect
 
 import torch
