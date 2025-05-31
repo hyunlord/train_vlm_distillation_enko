@@ -24,9 +24,9 @@ class KoSiglipDataset(Dataset):
         ko: str = self.ds[idx]["ko"]
         en: str = self.ds[idx]["en"]
 
-        ko_token = self.ko_tokenizer(ko, truncation=True)
-        en_ko_token = self.ko_tokenizer(en, truncation=True)
-        en_en_token = self.en_tokenizer(en, truncation=True)
+        ko_token = self.ko_tokenizer(ko, truncation=True, max_length=64, padding="max_length", return_tensors="pt")
+        en_ko_token = self.ko_tokenizer(en, truncation=True, max_length=64, padding="max_length", return_tensors="pt")
+        en_en_token = self.en_tokenizer(en, truncation=True, max_length=64, padding="max_length", return_tensors="pt")
         return ko_token, en_ko_token, en_en_token
 
 
@@ -36,10 +36,7 @@ class KoSiglipDataCollator:
         self.ko_tokenizer = ko_tokenizer
         
     def __call__(self, features: Sequence[tuple["BatchEncoding", "BatchEncoding", "BatchEncoding"]]):
-        ko_token, en_ko_token, en_en_token = zip(*features)
-        ko_batch = self.ko_tokenizer.pad(ko_token, padding=True, return_tensors="pt")
-        en_ko_batch = self.ko_tokenizer.pad(en_ko_token, padding=True, return_tensors="pt")
-        en_en_batch = self.ko_tokenizer.pad(en_en_token, padding=True, return_tensors="pt")
+        ko_batch, en_ko_batch, en_en_batch = zip(*features)
         return ko_batch, en_ko_batch, en_en_batch
 
 
