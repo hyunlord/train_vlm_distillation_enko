@@ -5,6 +5,7 @@ from typer import Option, Typer
 from loguru import logger
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichProgressBar
+from pytorch_lightning.strategies import DDPStrategy
 
 from app.dataset import KoSiglipDataModule
 from app.module import KoSiglipModule
@@ -98,7 +99,7 @@ def train(
         precision=32,
         max_epochs=max_epochs,
         callbacks=callbacks,
-        log_every_n_steps=log_every_n_steps,
+        log_every_n_steps=log_every_n_steps
     )
 
     logger.debug("start training")
