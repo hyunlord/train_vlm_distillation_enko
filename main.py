@@ -98,7 +98,6 @@ def train(
         precision='16-mixed',
         fast_dev_run=True,
         max_epochs=max_epochs,
-        callbacks=[RichModelSummary(max_depth=1)],
         log_every_n_steps=log_every_n_steps,
     )
 
