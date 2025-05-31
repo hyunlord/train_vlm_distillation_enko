@@ -1,10 +1,7 @@
 import inspect
-from itertools import chain
-from typing import Literal
 
-import pytorch_lightning as pl
 import torch
-from loguru import logger
+import pytorch_lightning as pl
 from transformers import AutoFeatureExtractor, AutoTokenizer, AutoModel, VisionTextDualEncoderModel, AutoProcessor
 
 from .util import create_optimizer
@@ -68,7 +65,7 @@ class KoSiglipModule(pl.LightningModule):
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
 
-    def training_step(self, batch, batch_idx):
+    def step(self, batch):
         ko_batch, en_ko_batch, en_en_batch = batch
 
         ko_emb = self.student.text_model(**ko_batch)[1]
@@ -86,14 +83,28 @@ class KoSiglipModule(pl.LightningModule):
         }
         return loss_dict
 
+    def training_step(self, batch, batch_idx):
+        loss = self.step(batch)
+        self.log_dict(
+            {
+                "train/loss": loss["loss"],
+                "train/loss_ko": loss["loss_ko"],
+                "train/loss_en": loss["loss_en"],
+            },
+            on_step=True,
+            on_epoch=True,
+        )
+        return loss["loss"]
+
     def validation_step(self, batch, batch_idx):
         loss = self.step(batch)
-
-        self.log({
-            "val/loss": loss["loss"],
-            "val/loss_ko": loss["loss_ko"],
-            "val/loss_en": loss["loss_en"]
-        }, on_epoch=True)
+        self.log(
+            {
+                "val/loss": loss["loss"],
+                "val/loss_ko": loss["loss_ko"],
+                "val/loss_en": loss["loss_en"]
+            }, on_epoch=True
+        )
         return loss["loss"]
 
     def save(self, save_dir: str="save/model"):

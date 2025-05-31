@@ -9,7 +9,6 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, Ri
 from app.dataset import KoSiglipDataModule
 from app.module import KoSiglipModule
 
-
 cmd = Typer()
 
 
