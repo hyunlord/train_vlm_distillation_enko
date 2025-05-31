@@ -96,7 +96,6 @@ def train(
     trainer = pl.Trainer(
         accelerator="auto",
         precision=32,
-        fast_dev_run=True,
         max_epochs=max_epochs,
         callbacks=callbacks,
         log_every_n_steps=log_every_n_steps,
