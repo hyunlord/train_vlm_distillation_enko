@@ -36,8 +36,8 @@ class KoSiglipModule(pl.LightningModule):
                 "weight_decay": self.weight_decay
             },
             {
-                "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
-                "weight_decay": 0
+                "params": [p for n, p in params if any(nd in n for nd in no_decay)],
+                "weight_decay": 0.0
             }
         ]
 
