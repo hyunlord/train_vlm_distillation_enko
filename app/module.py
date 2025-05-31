@@ -24,10 +24,6 @@ class KoSiglipModule(pl.LightningModule):
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
         student = AutoModel.from_pretrained(student_model_name)
-
-        teacher.eval()
-        for param in teacher.parameters():
-            param.requires_grad = False
         return teacher, student
 
     def configure_optimizers(self):
