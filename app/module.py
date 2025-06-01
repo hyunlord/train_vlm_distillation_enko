@@ -1,4 +1,5 @@
 import inspect
+from loguru import logger
 
 import torch
 import pytorch_lightning as pl
@@ -8,7 +9,7 @@ from .util import create_optimizer
 
 
 class KoSiglipModule(pl.LightningModule):
-    def __init__(self, teacher_model_name: str, student_model_name: str, optimizer: str="adamw", learning_rate: float=5e-4, weight_decay: float=1e-4):
+    def __init__(self, teacher_model_name: str, student_model_name: str, optimizer: str = "adamw", learning_rate: float = 5e-4, weight_decay: float = 1e-4):
         super().__init__()
         self.save_hyperparameters()
 
@@ -110,5 +111,10 @@ class KoSiglipModule(pl.LightningModule):
         )
         return loss["loss"]
 
-    def save(self, save_dir: str="save/model"):
+    def on_epoch_end(self):
+        epoch_save_dir = f"save/model_not-train-teacher_epoch_{self.current_epoch}"
+        self.save(epoch_save_dir)
+        logger.info(f"model saved at: {epoch_save_dir}")
+
+    def save(self, save_dir: str = "save/model"):
         self.student.save_pretrained(save_dir)
