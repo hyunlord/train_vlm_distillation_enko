@@ -107,9 +107,6 @@ def train(
     trainer.fit(module, datamodule=datamodule)
     logger.debug("training finished")
 
-    module.save(save_path)
-    logger.info(f"model saved at: {save_path}")
-
 
 if __name__ == "__main__":
     cmd()
