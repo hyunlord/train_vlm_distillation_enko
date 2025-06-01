@@ -55,7 +55,7 @@ def train(
             help="accumulate grad batches", rich_help_panel="train"
         ),
         max_epochs: int = Option(
-            3,
+            5,
             help="max_epochs", rich_help_panel="train"
         ),
         save_path: str = Option(
