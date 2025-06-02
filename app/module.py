@@ -25,9 +25,9 @@ class KoSiglipModule(pl.LightningModule):
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
         student = AutoModel.from_pretrained(student_model_name)
-        teacher.eval()
-        for param in teacher.parameters():
-            param.requires_grad = False
+        #teacher.eval()
+        #for param in teacher.parameters():
+        #    param.requires_grad = False
         return teacher, student
 
     def configure_optimizers(self):
@@ -112,7 +112,7 @@ class KoSiglipModule(pl.LightningModule):
         return loss["loss"]
 
     def on_epoch_end(self):
-        epoch_save_dir = f"save/model_not-train-teacher_epoch_{self.current_epoch}"
+        epoch_save_dir = f"save/model_train-teacher_epoch_{self.current_epoch}"
         self.save(epoch_save_dir)
         logger.info(f"model saved at: {epoch_save_dir}")
 
