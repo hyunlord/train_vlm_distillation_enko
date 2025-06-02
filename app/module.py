@@ -8,7 +8,7 @@ from transformers import AutoFeatureExtractor, AutoTokenizer, AutoModel, VisionT
 from .util import create_optimizer
 
 
-class KoSiglipModule(pl.LightningModule):
+class EnKoDistillationModule(pl.LightningModule):
     def __init__(self, teacher_model_name: str, student_model_name: str, optimizer: str = "adamw", learning_rate: float = 5e-4, weight_decay: float = 1e-4):
         super().__init__()
         self.save_hyperparameters()
@@ -24,10 +24,12 @@ class KoSiglipModule(pl.LightningModule):
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
-        student = AutoModel.from_pretrained(student_model_name)
-        #teacher.eval()
-        #for param in teacher.parameters():
-        #    param.requires_grad = False
+        teacher.eval()
+        for param in teacher.parameters():
+            param.requires_grad = False
+
+        student = VisionTextDualEncoderModel.from_vision_text_pretrained(teacher_model_name, student_model_name)
+        student.logit_scale = teacher.logit_scale
         return teacher, student
 
     def configure_optimizers(self):
@@ -70,20 +72,20 @@ class KoSiglipModule(pl.LightningModule):
         return [optimizer], [scheduler_config]
 
     def step(self, batch):
-        ko_batch, en_ko_batch, en_en_batch = batch
+        student_ko_batch, student_en_batch, teacher_en_batch = batch
 
-        ko_emb = self.student.text_model(**ko_batch)[1]
-        en_ko_emb = self.student.text_model(**en_ko_batch)[1]
-        en_en_emb = self.teacher.text_model(**en_en_batch)[1]
+        student_ko_emb = self.student.text_model(**student_ko_batch)[1]
+        student_en_emb = self.student.text_model(**student_en_batch)[1]
+        teacher_en_emb = self.teacher.text_model(**teacher_en_batch)[1]
 
-        ko_en_loss = self.mse(ko_emb, en_en_emb)
-        en_en_loss = self.mse(en_ko_emb, en_en_emb)
-        loss = ko_en_loss + en_en_loss
+        s_t_loss = self.mse(student_ko_emb, teacher_en_emb)
+        en_loss = self.mse(student_en_emb, teacher_en_emb)
+        loss = s_t_loss + en_loss
 
         loss_dict = {
             "loss": loss,
-            "loss_ko": ko_en_loss,
-            "loss_en": en_en_loss
+            "loss_st": s_t_loss,
+            "loss_en": en_loss
         }
         return loss_dict
 
@@ -92,7 +94,7 @@ class KoSiglipModule(pl.LightningModule):
         self.log_dict(
             {
                 "train/loss": loss["loss"],
-                "train/loss_ko": loss["loss_ko"],
+                "train/loss_st": loss["loss_st"],
                 "train/loss_en": loss["loss_en"],
             },
             on_step=True,
@@ -105,14 +107,14 @@ class KoSiglipModule(pl.LightningModule):
         self.log(
             {
                 "val/loss": loss["loss"],
-                "val/loss_ko": loss["loss_ko"],
+                "val/loss_st": loss["loss_st"],
                 "val/loss_en": loss["loss_en"]
             }, on_epoch=True
         )
         return loss["loss"]
 
     def on_epoch_end(self):
-        epoch_save_dir = f"save/model_train-teacher_epoch_{self.current_epoch}"
+        epoch_save_dir = f"save/sigilp2_sroberta_no-train-teacher_epoch_{self.current_epoch}"
         self.save(epoch_save_dir)
         logger.info(f"model saved at: {epoch_save_dir}")
 

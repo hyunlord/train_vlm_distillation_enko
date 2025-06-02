@@ -7,8 +7,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichProgressBar
 from pytorch_lightning.strategies import DDPStrategy
 
-from app.dataset import KoSiglipDataModule
-from app.module import KoSiglipModule
+from app.dataset import EnKoDistillationDataModule
+from app.module import EnKoDistillationModule
 
 cmd = Typer()
 
@@ -26,7 +26,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "google/siglip2-base-patch16-224",
+            "jhgan/ko-sroberta-multitask",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
@@ -72,14 +72,14 @@ def train(
         )
 ):
     logger.debug("loading dataset")
-    datamodule = KoSiglipDataModule(
+    datamodule = EnKoDistillationDataModule(
         teacher_model_name,
         student_model_name,
         batch_size=batch_size,
         num_workers=num_workers
     )
 
-    module = KoSiglipModule(
+    module = EnKoDistillationModule(
         teacher_model_name,
         student_model_name,
         optimizer=optimizer,

@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from transformers import BatchEncoding
 
 
-class KoSiglipDataset(Dataset):
-    def __init__(self, ds: HFDataset, en_tokenizer: PreTrainedTokenizerFast, ko_tokenizer: PreTrainedTokenizerFast):
+class EnKoDistillationDataset(Dataset):
+    def __init__(self, ds: HFDataset, teacher_tokenizer: PreTrainedTokenizerFast, student_tokenizer: PreTrainedTokenizerFast):
         self.ds = ds
-        self.en_tokenizer = en_tokenizer
-        self.ko_tokenizer = ko_tokenizer
+        self.teacher_tokenizer = teacher_tokenizer
+        self.student_tokenizer = student_tokenizer
 
     def __len__(self):
         return len(self.ds)
@@ -26,24 +26,24 @@ class KoSiglipDataset(Dataset):
         return ko, en, en
 
 
-class KoSiglipDataCollator:
-    def __init__(self, en_tokenizer: PreTrainedTokenizerFast, ko_tokenizer: PreTrainedTokenizerFast):
-        self.en_tokenizer = en_tokenizer
-        self.ko_tokenizer = ko_tokenizer
+class EnKoDistillationDataCollator:
+    def __init__(self, teacher_tokenizer: PreTrainedTokenizerFast, student_tokenizer: PreTrainedTokenizerFast):
+        self.teacher_tokenizer = teacher_tokenizer
+        self.student_tokenizer = student_tokenizer
         
     def __call__(self, features: Sequence[tuple["BatchEncoding", "BatchEncoding", "BatchEncoding"]]):
         ko_texts, en_ko_texts, en_en_texts = zip(*features)
-        ko_batch = self.ko_tokenizer(list(ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
-        en_ko_batch = self.ko_tokenizer(list(en_ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
-        en_en_batch = self.ko_tokenizer(list(en_en_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
-        return ko_batch, en_ko_batch, en_en_batch
+        student_ko_batch = self.student_tokenizer(list(ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        student_en_batch = self.student_tokenizer(list(en_ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        teacher_en_batch = self.teacher_tokenizer(list(en_en_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        return student_ko_batch, student_en_batch, teacher_en_batch
 
 
-class KoSiglipDataModule(pl.LightningDataModule):
-    def __init__(self, en_tokenizer_name: str, ko_tokenizer_name: str, batch_size: int = 32, num_workers: int = 8):
+class KoEnDistillationDataModule(pl.LightningDataModule):
+    def __init__(self, teacher_tokenizer_name: str, student_tokenizer_name: str, batch_size: int = 32, num_workers: int = 8):
         super().__init__()
-        self.en_tokenizer_name = en_tokenizer_name
-        self.ko_tokenizer_name = ko_tokenizer_name
+        self.teacher_tokenizer_name = teacher_tokenizer_name
+        self.student_tokenizer_name = student_tokenizer_name
         self.batch_size = batch_size
         self.num_workers = num_workers
 
@@ -53,10 +53,10 @@ class KoSiglipDataModule(pl.LightningDataModule):
         
     def setup(self, stage=None):
         ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection", split="train+validation")
-        en_tokenizer = AutoTokenizer.from_pretrained(self.en_tokenizer_name)
-        ko_tokenizer = AutoTokenizer.from_pretrained(self.ko_tokenizer_name)
-        self.data_collator = KoSiglipDataCollator(en_tokenizer, ko_tokenizer)
-        self.train_dataset = KoSiglipDataset(ds, en_tokenizer, ko_tokenizer)
+        teacher_tokenizer = AutoTokenizer.from_pretrained(self.teacher_tokenizer_name)
+        student_tokenizer = AutoTokenizer.from_pretrained(self.student_tokenizer_name)
+        self.data_collator = EnKoDistillationDataCollator(teacher_tokenizer, student_tokenizer)
+        self.train_dataset = EnKoDistillationDataset(ds, teacher_tokenizer, student_tokenizer)
         
     def train_dataloader(self):
         return DataLoader(
@@ -67,18 +67,3 @@ class KoSiglipDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=True
         )
-
-
-if __name__ == "__main__":
-    ds = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection", split="train+validation")
-    en_tokenizer = AutoTokenizer.from_pretrained("google/siglip-so400m-patch14-384")
-    ko_tokenizer = AutoTokenizer.from_pretrained("lassl/roberta-ko-small")
-
-    dataset = KoSiglipDataset(ds, en_tokenizer, ko_tokenizer)
-
-    collate_fn = KoSiglipDataCollator(en_tokenizer, ko_tokenizer)
-    loader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn)
-
-    for batch in loader:
-        print(batch)
-        break
