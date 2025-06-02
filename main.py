@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Optional
 from typer import Option, Typer
 
@@ -11,11 +10,6 @@ from app.dataset import EnKoDistillationDataModule
 from app.module import EnKoDistillationModule
 
 cmd = Typer()
-
-
-class ModelTypeEnum(str, Enum):
-    CLIP = "clip"
-    SIGLIP = "siglip"
 
 
 @cmd.command()
