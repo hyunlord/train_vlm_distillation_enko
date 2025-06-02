@@ -39,7 +39,7 @@ class EnKoDistillationDataCollator:
         return student_ko_batch, student_en_batch, teacher_en_batch
 
 
-class KoEnDistillationDataModule(pl.LightningDataModule):
+class EnKoDistillationDataModule(pl.LightningDataModule):
     def __init__(self, teacher_tokenizer_name: str, student_tokenizer_name: str, batch_size: int = 32, num_workers: int = 8):
         super().__init__()
         self.teacher_tokenizer_name = teacher_tokenizer_name
