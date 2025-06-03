@@ -30,7 +30,7 @@ def train(
             help="optimizer name", rich_help_panel="model"
         ),
         learning_rate: float = Option(
-            5e-4,
+            1e-5,
             "-lr", "--learning-rate",
             help="learning_rate",  rich_help_panel="model"
         ),
@@ -46,15 +46,11 @@ def train(
         ),
         num_workers: int = Option(
             0, min=0,
-            help="accumulate grad batches", rich_help_panel="train"
+            help="num_workers", rich_help_panel="train"
         ),
         max_epochs: int = Option(
             5,
             help="max_epochs", rich_help_panel="train"
-        ),
-        save_path: str = Option(
-            "save/model",
-            help="save path of trained model", rich_help_panel="train"
         ),
         log_every_n_steps: int = Option(
             100,

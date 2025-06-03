@@ -65,8 +65,12 @@ class EnKoDistillationModule(pl.LightningModule):
 
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
-            self.learning_rate,
-            total_steps=self.trainer.estimated_stepping_batches
+            max_lr=self.learning_rate,
+            total_steps=self.trainer.estimated_stepping_batches,
+            pct_start=0.1,
+            anneal_strategy='cos',
+            div_factor=25,
+            final_div_factor=1e4
         )
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
