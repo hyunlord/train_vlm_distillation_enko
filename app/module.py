@@ -42,8 +42,8 @@ class EnKoDistillationModule(pl.LightningModule):
     def configure_optimizers(self):
         params = list(
             chain(
-                self.student.text_model.named_parameters(),
-                self.student.text_projection.named_parameters(),
+                self.student_text_model.named_parameters(),
+                self.text_projection.named_parameters(),
             )
         )
 
