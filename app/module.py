@@ -1,7 +1,9 @@
 import inspect
+from itertools import chain
 from loguru import logger
 
 import torch
+import torch.nn as nn
 import pytorch_lightning as pl
 from transformers import AutoFeatureExtractor, AutoTokenizer, AutoModel, VisionTextDualEncoderModel, AutoProcessor
 
@@ -15,7 +17,11 @@ class EnKoDistillationModule(pl.LightningModule):
 
         self.teacher_model_name = teacher_model_name
         self.student_model_name = student_model_name
-        self.teacher, self.student = self.init_model(teacher_model_name, student_model_name)
+        self.teacher_vision_model, self.teacher_text_model, self.student_text_model = self.init_model(teacher_model_name, student_model_name)
+
+        self.vision_projection_dim = self.teacher_vision_model.config.hidden_size
+        self.text_projection_dim = self.student_text_model.config.hidden_size
+        self.text_projection = nn.Linear(self.text_projection_dim, self.vision_projection_dim)
 
         self.mse = torch.nn.MSELoss()
         self.optimizer = optimizer
@@ -23,19 +29,26 @@ class EnKoDistillationModule(pl.LightningModule):
         self.weight_decay = weight_decay
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
-        teacher = AutoModel.from_pretrained(teacher_model_name)
-        teacher.eval()
-        for param in teacher.parameters():
+        teacher_model = AutoModel.from_pretrained(teacher_model_name)
+        for param in teacher_model.parameters():
             param.requires_grad = False
+        teacher_model.eval()
 
-        student = VisionTextDualEncoderModel.from_vision_text_pretrained(teacher_model_name, student_model_name)
-        student.logit_scale = teacher.logit_scale
-        return teacher, student
+        teacher_vision_model = teacher_model.vision_model
+        teacher_text_model = teacher_model.text_model
+        student_text_model = AutoModel.from_pretrained(student_model_name)
+        return teacher_vision_model, teacher_text_model, student_text_model
 
     def configure_optimizers(self):
-        params = list(self.student.text_model.named_parameters())
+        params = list(
+            chain(
+                self.student.text_model.named_parameters(),
+                self.student.text_projection.named_parameters(),
+            )
+        )
 
-        no_decay = ["bias", "LayerNorm.weight"]
+        #no_decay = ["bias", "LayerNorm.weight"]
+        no_decay = []
         optimizer_grouped_parameters = [
             {
                 "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
@@ -48,19 +61,9 @@ class EnKoDistillationModule(pl.LightningModule):
         ]
 
         opt_class = create_optimizer(self.optimizer)
-        signiture = inspect.signature(opt_class)
-        opt_kwargs = {}
-        if "capturable" in signiture.parameters:
-            opt_kwargs["capturable"] = True
-        if "weight_decouple" in signiture.parameters:
-            opt_kwargs["weight_decouple"] = True
-        if "decouple_decay" in signiture.parameters:
-            opt_kwargs["decouple_decay"] = True
-
         optimizer = opt_class(
             optimizer_grouped_parameters,
-            lr=self.learning_rate,
-            **opt_kwargs
+            lr=self.learning_rate
         )
 
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -78,17 +81,17 @@ class EnKoDistillationModule(pl.LightningModule):
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
 
-        student_ko_emb = self.student.text_model(**student_ko_batch)[1]
-        student_en_emb = self.student.text_model(**student_en_batch)[1]
-        teacher_en_emb = self.teacher.text_model(**teacher_en_batch)[1]
+        student_ko_emb = self.text_projection(self.student_text_model(**student_ko_batch)[1])
+        student_en_emb = self.text_projection(self.student_text_model(**student_en_batch)[1])
+        teacher_en_emb = self.teacher_text_model(**teacher_en_batch)[1]
 
-        s_t_loss = self.mse(student_ko_emb, teacher_en_emb)
+        st_loss = self.mse(student_ko_emb, teacher_en_emb)
         en_loss = self.mse(student_en_emb, teacher_en_emb)
-        loss = s_t_loss + en_loss
+        loss = st_loss + en_loss
 
         loss_dict = {
             "loss": loss,
-            "loss_st": s_t_loss,
+            "loss_st": st_loss,
             "loss_en": en_loss
         }
         return loss_dict
@@ -118,9 +121,9 @@ class EnKoDistillationModule(pl.LightningModule):
         return loss["loss"]
 
     def on_epoch_end(self):
-        epoch_save_dir = f"save/sigilp2_sroberta_no-train-teacher_epoch_{self.current_epoch}"
+        epoch_save_dir = f"save/sigilp2_sroberta_epoch_{self.current_epoch}"
         self.save(epoch_save_dir)
         logger.info(f"model saved at: {epoch_save_dir}")
 
-    def save(self, save_dir: str = "save/model"):
+    def save(self, save_dir: str):
         self.student.save_pretrained(save_dir)
