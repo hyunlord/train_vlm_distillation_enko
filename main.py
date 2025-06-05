@@ -8,6 +8,7 @@ from pytorch_lightning.strategies import DDPStrategy
 
 from app.dataset import EnKoDistillationDataModule
 from app.module import EnKoDistillationModule
+from app.siglip_enko_distillation_module import SiglipEnKoDistillationModule
 
 cmd = Typer()
 
