@@ -27,18 +27,18 @@ class CombinedModel(PreTrainedModel):
         super().__init__(config)
         self.config = config
 
-        self.teacher_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path)
-        self.teacher_vision_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path).vision_model
-        for param in self.teacher_vision_model.parameters():
+        teacher_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path)
+        self.vision_model = self.teacher_model.vision_model
+        for param in self.vision_model.parameters():
             param.requires_grad = False
-        self.teacher_vision_model.eval()
+        self.vision_model.eval()
 
-        self.student_text_model = AutoModel.from_pretrained(self.config.student_model_name_or_path)
+        self.text_model = AutoModel.from_pretrained(self.config.student_model_name_or_path)
         self.text_projection = nn.Linear(self.config.text_projection_dim, self.config.vision_projection_dim)
         self._init_weights(self.text_projection)
 
-        self.logit_scale = self.teacher_model.logit_scale
-        self.logit_bias = self.teacher_model.logit_bias
+        self.logit_scale = teacher_model.logit_scale
+        self.logit_bias = teacher_model.logit_bias
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
