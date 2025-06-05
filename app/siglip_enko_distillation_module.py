@@ -91,7 +91,7 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
     def configure_optimizers(self):
         params = list(
             chain(
-                self.combined_model.student_text_model.named_parameters(),
+                self.combined_model.text_model.named_parameters(),
                 self.combined_model.text_projection.named_parameters(),
             )
         )
