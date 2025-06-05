@@ -16,7 +16,7 @@ cmd = Typer()
 @cmd.command()
 def train(
         teacher_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-base-patch16-224",
+            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
             "-t", "--teacher",
             help="name of teacher model", rich_help_panel="model"
         ),

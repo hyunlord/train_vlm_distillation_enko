@@ -9,7 +9,7 @@ class CombinedModelConfig(PretrainedConfig):
     def __init__(self,
                  teacher_model_name_or_path="google/siglip2-base-patch16-224",
                  student_model_name_or_path="jhgan/ko-sroberta-multitask",
-                 vision_projection_dim=768,
+                 vision_projection_dim=1152,
                  text_projection_dim=768,
                  **kwargs):
         super().__init__(**kwargs)
