@@ -46,17 +46,35 @@ class CombinedModel(PreTrainedModel):
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
 
-    def get_vision_features(self, pixel_values, **kwargs):
-        if pixel_values is None:
-            raise ValueError("pixel_values를 제공해야 합니다.")
+    def get_vision_features(self, pixel_values=None, pixel_attention_mask=None, spatial_shapes=None, output_attentions=None, output_hidden_states=None):
         with torch.no_grad():
-            vision_outputs = self.vision_model(pixel_values=pixel_values, **kwargs)
-            vision_embeds = vision_outputs.pooler_output
-        return vision_embeds
+            output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+            output_hidden_states = (
+                output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+            )
 
-    def get_text_features(self, input_ids, attention_mask, **kwargs):
-        if input_ids is None:
-            raise ValueError("input_ids와 attention_mask를 제공해야 합니다.")
-        pooled_text_outputs = self.student_text_model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)[1]
-        projected_text_embeds = self.text_projection(pooled_text_outputs)
-        return projected_text_embeds
+            vision_outputs = self.vision_model(
+                pixel_values=pixel_values,
+                attention_mask=pixel_attention_mask,
+                spatial_shapes=spatial_shapes,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+            )
+            pooled_output = vision_outputs.pooler_output
+        return pooled_output
+
+    def get_text_features(self, input_ids=None, attention_mask=None, position_ids=None, output_attentions=None, output_hidden_states=None):
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+
+        text_outputs = self.text_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states
+        )
+        pooled_output = text_outputs.pooler_output
+        return pooled_output
