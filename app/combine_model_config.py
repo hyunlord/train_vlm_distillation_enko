@@ -33,7 +33,7 @@ class CombinedModel(PreTrainedModel):
         self.teacher_vision_model.eval()
 
         self.student_text_model = AutoModel.from_pretrained(self.config.student_model_name_or_path)
-        self.text_projection = nn.Linear(self.config.text_projection_dim, self.configvision_projection_dim)
+        self.text_projection = nn.Linear(self.config.text_projection_dim, self.config.vision_projection_dim)
 
     def get_vision_features(self, pixel_values, **kwargs):
         if pixel_values is None:
