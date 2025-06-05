@@ -27,6 +27,7 @@ class CombinedModel(PreTrainedModel):
         super().__init__(config)
         self.config = config
 
+        self.teacher_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path)
         self.teacher_vision_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path).vision_model
         for param in self.teacher_vision_model.parameters():
             param.requires_grad = False
@@ -35,6 +36,9 @@ class CombinedModel(PreTrainedModel):
         self.student_text_model = AutoModel.from_pretrained(self.config.student_model_name_or_path)
         self.text_projection = nn.Linear(self.config.text_projection_dim, self.config.vision_projection_dim)
         self._init_weights(self.text_projection)
+
+        self.logit_scale = self.teacher_model.logit_scale
+        self.logit_bias = self.teacher_model.logit_bias
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
@@ -56,29 +60,3 @@ class CombinedModel(PreTrainedModel):
         pooled_text_outputs = self.student_text_model(input_ids=input_ids, attention_mask=attention_mask, **kwargs)[1]
         projected_text_embeds = self.text_projection(pooled_text_outputs)
         return projected_text_embeds
-
-    def forward(self,
-                pixel_values=None,
-                input_ids=None,
-                attention_mask=None,
-                return_dict=None,
-                **kwargs):
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        vision_embeds = None
-        if pixel_values is not None:
-            vision_embeds = self.get_vision_features(pixel_values=pixel_values, **kwargs.get('vision_kwargs', {}))
-
-        text_embeds = None
-        if input_ids is not None:
-            if attention_mask is None:
-                attention_mask = torch.ones_like(input_ids)
-            text_embeds = self.get_text_features(input_ids=input_ids, attention_mask=attention_mask, **kwargs.get('text_kwargs', {}))
-
-        if not return_dict:
-            output = (vision_embeds, text_embeds)
-            return tuple(x for x in output if x is not None) if any(x is not None for x in output) else None
-        return {
-            "vision_embeddings": vision_embeds,
-            "text_embeddings": text_embeds
-        }
