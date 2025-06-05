@@ -1,8 +1,6 @@
 from itertools import chain
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import pytorch_lightning as pl
 from torch.optim import SGD, Adam, AdamW
 from transformers import AutoConfig, AutoTokenizer, AutoModel
