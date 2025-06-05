@@ -18,7 +18,7 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
         self.student_model_name = student_model_name
 
         teacher_vision_config = AutoConfig.from_pretrained(self.teacher_model_name).vision_config
-        student_text_config = AutoConfig.from_pretrained(self.student_model_name).text_config
+        student_text_config = AutoConfig.from_pretrained(self.student_model_name)
         self.combined_config = CombinedModelConfig(
             teacher_model_name_or_path=self.teacher_model_name,
             student_model_name_or_path=self.student_model_name,
