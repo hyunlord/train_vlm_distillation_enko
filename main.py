@@ -21,7 +21,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
+            "jhgan/ko-sroberta-multitask",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
