@@ -28,7 +28,7 @@ class CombinedModel(PreTrainedModel):
         self.config = config
 
         teacher_model = AutoModel.from_pretrained(self.config.teacher_model_name_or_path)
-        self.vision_model = self.teacher_model.vision_model
+        self.vision_model = teacher_model.vision_model
         for param in self.vision_model.parameters():
             param.requires_grad = False
         self.vision_model.eval()
