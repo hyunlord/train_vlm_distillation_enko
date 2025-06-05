@@ -70,7 +70,7 @@ def train(
         num_workers=num_workers
     )
 
-    module = EnKoDistillationModule(
+    module = SiglipEnKoDistillationModule(
         teacher_model_name,
         student_model_name,
         optimizer=optimizer,
