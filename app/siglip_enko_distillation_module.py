@@ -40,8 +40,8 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
 
-        student_ko_emb = self.combined_model.text_projection(self.combined_model.student_text_model(**student_ko_batch)[1])
-        student_en_emb = self.combined_model.text_projection(self.combined_model.student_text_model(**student_en_batch)[1])
+        student_ko_emb = self.combined_model.text_projection(self.combined_model.text_model(**student_ko_batch)[1])
+        student_en_emb = self.combined_model.text_projection(self.combined_model.text_model(**student_en_batch)[1])
         teacher_en_emb = self.teacher_text_model(**teacher_en_batch)[1]
 
         st_loss = self.mse(student_ko_emb, teacher_en_emb)
