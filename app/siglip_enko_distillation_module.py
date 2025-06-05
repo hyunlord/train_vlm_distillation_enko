@@ -1,3 +1,4 @@
+import inspect
 from itertools import chain
 
 import torch
@@ -94,24 +95,38 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
                 self.combined_model.text_projection.named_parameters(),
             )
         )
+        no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
-            {"params": [p for n, p in params],
-             "weight_decay": self.weight_decay}
+            {
+                "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
+                "weight_decay": self.weight_decay
+            },
+            {
+                "params": [p for n, p in params if any(nd in n for nd in no_decay)],
+                "weight_decay": 0.0
+            }
         ]
+
         opt_class = self.create_optimizer(self.optimizer)
+        signiture = inspect.signature(opt_class)
+        opt_kwargs = {}
+        if "capturable" in signiture.parameters:
+            opt_kwargs["capturable"] = True
+        if "weight_decouple" in signiture.parameters:
+            opt_kwargs["weight_decouple"] = True
+        if "decouple_decay" in signiture.parameters:
+            opt_kwargs["decouple_decay"] = True
+
         optimizer = opt_class(
             optimizer_grouped_parameters,
-            lr=self.learning_rate
+            lr=self.learning_rate,
+            **opt_kwargs
         )
 
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
-            max_lr=self.learning_rate,
+            self.learning_rate,
             total_steps=self.trainer.estimated_stepping_batches,
-            pct_start=0.1,
-            anneal_strategy='cos',
-            div_factor=25,
-            final_div_factor=1e4
         )
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]

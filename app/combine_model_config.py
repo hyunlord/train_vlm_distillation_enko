@@ -34,6 +34,13 @@ class CombinedModel(PreTrainedModel):
 
         self.student_text_model = AutoModel.from_pretrained(self.config.student_model_name_or_path)
         self.text_projection = nn.Linear(self.config.text_projection_dim, self.config.vision_projection_dim)
+        self._init_weights(self.text_projection)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
 
     def get_vision_features(self, pixel_values, **kwargs):
         if pixel_values is None:

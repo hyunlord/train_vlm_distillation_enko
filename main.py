@@ -31,7 +31,7 @@ def train(
             help="optimizer name", rich_help_panel="model"
         ),
         learning_rate: float = Option(
-            1e-5,
+            5e-4,
             "-lr", "--learning-rate",
             help="learning_rate",  rich_help_panel="model"
         ),
