@@ -16,12 +16,12 @@ cmd = Typer()
 @cmd.command()
 def train(
         teacher_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-base-patch16-224",
+            "google/siglip2-base-patch16-224",
             "-t", "--teacher",
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/ko-sroberta-multitask",
+            "jhgan/ko-sroberta-multitask",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
