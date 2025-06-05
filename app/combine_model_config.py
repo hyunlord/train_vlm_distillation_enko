@@ -77,4 +77,5 @@ class CombinedModel(PreTrainedModel):
             output_hidden_states=output_hidden_states
         )
         pooled_output = text_outputs.pooler_output
-        return pooled_output
+        projected_outputs = self.text_projection(pooled_output)
+        return projected_outputs
