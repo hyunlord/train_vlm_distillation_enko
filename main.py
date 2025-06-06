@@ -21,7 +21,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "jhgan/ko-sroberta-multitask",
+            "lassl/roberta-ko-small",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
