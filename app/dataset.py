@@ -32,10 +32,10 @@ class EnKoDistillationDataCollator:
         self.student_tokenizer = student_tokenizer
         
     def __call__(self, features: Sequence[tuple["BatchEncoding", "BatchEncoding", "BatchEncoding"]]):
-        ko_texts, en_ko_texts, en_en_texts = zip(*features)
-        student_ko_batch = self.student_tokenizer(list(ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
-        student_en_batch = self.student_tokenizer(list(en_ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
-        teacher_en_batch = self.teacher_tokenizer(list(en_en_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        student_ko_texts, student_en_texts, teacher_en_texts = zip(*features)
+        student_ko_batch = self.student_tokenizer(list(student_ko_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        student_en_batch = self.student_tokenizer(list(student_en_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
+        teacher_en_batch = self.teacher_tokenizer(list(teacher_en_texts), padding="max_length", truncation=True, max_length=64, return_tensors="pt")
         return student_ko_batch, student_en_batch, teacher_en_batch
 
 

@@ -21,7 +21,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "jhgan/ko-sroberta-multitask",
+            "lassl/roberta-ko-small",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
@@ -31,7 +31,7 @@ def train(
             help="optimizer name", rich_help_panel="model"
         ),
         learning_rate: float = Option(
-            5e-4,
+            1e-5,
             "-lr", "--learning-rate",
             help="learning_rate",  rich_help_panel="model"
         ),
