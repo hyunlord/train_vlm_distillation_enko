@@ -37,11 +37,22 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
             param.requires_grad = False
         self.teacher_text_model.eval()
 
+    def mean_pooling(self, model_output, attention_mask):
+        token_embeddings = model_output[0]
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
 
-        student_ko_emb = self.combined_model.text_projection(self.combined_model.text_model(**student_ko_batch)[1])
-        student_en_emb = self.combined_model.text_projection(self.combined_model.text_model(**student_en_batch)[1])
+        student_ko_outputs = self.combined_model.text_model(**student_ko_batch)
+        student_en_outputs = self.combined_model.text_model(**student_en_batch)
+
+        pooled_en_emb = self.mean_pooling(student_en_outputs, student_en_batch['attention_mask'])
+        pooled_ko_emb = self.mean_pooling(student_ko_outputs, student_ko_batch['attention_mask'])
+
+        student_ko_emb = self.combined_model.text_projection(pooled_ko_emb)
+        student_en_emb = self.combined_model.text_projection(pooled_en_emb)
         teacher_en_emb = self.teacher_text_model(**teacher_en_batch)[1]
 
         st_loss = self.mse(student_ko_emb, teacher_en_emb)
