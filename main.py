@@ -41,7 +41,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         batch_size: int = Option(
-            32,
+            64,
             "-b", "--batch-size",
             min=1, help="batch size", rich_help_panel="model"
         ),

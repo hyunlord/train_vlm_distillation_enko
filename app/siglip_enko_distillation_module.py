@@ -33,9 +33,9 @@ class SiglipEnKoDistillationModule(pl.LightningModule):
         self.weight_decay = weight_decay
 
         self.teacher_text_model = AutoModel.from_pretrained(self.teacher_model_name).text_model
-        #for param in self.teacher_text_model.parameters():
-        #    param.requires_grad = False
-        #self.teacher_text_model.eval()
+        for param in self.teacher_text_model.parameters():
+            param.requires_grad = False
+        self.teacher_text_model.eval()
 
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
