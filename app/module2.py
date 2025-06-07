@@ -47,12 +47,12 @@ class KoCLIPModule(pl.LightningModule):
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = CLIPModel.from_pretrained(
-            teacher_model_name, use_auth_token=self.use_auth_token
+            teacher_model_name
         )
 
         if self.model_type == "clip":
             student = CLIPModel.from_pretrained(
-                student_model_name, use_auth_token=self.use_auth_token
+                student_model_name
             )
         else:
             student = VisionTextDualEncoderModel.from_vision_text_pretrained(
@@ -168,16 +168,16 @@ class KoCLIPModule(pl.LightningModule):
         self.student.save_pretrained(save_dir)
 
         tokenizer = AutoTokenizer.from_pretrained(
-            self.student_model_name, use_auth_token=self.use_auth_token
+            self.student_model_name
         )
 
         if self.model_type == "clip":
             processor = CLIPProcessor.from_pretrained(
-                self.student_model_name, use_auth_token=self.use_auth_token
+                self.student_model_name
             )
         else:
             feature_extractor = AutoFeatureExtractor.from_pretrained(
-                self.teacher_model_name, use_auth_token=self.use_auth_token
+                self.teacher_model_name
             )
             processor = VisionTextDualEncoderProcessor(feature_extractor, tokenizer)
         processor.save_pretrained(save_dir)
