@@ -146,6 +146,7 @@ def train(
         strategy=DDPStrategy(find_unused_parameters=True)
     )
     logger.debug("start training")
+    trainer.tune(module, datamodule=datamodule)
     trainer.fit(module, datamodule=datamodule)
     logger.debug("training finished")
 
