@@ -9,7 +9,6 @@ from pytorch_lightning.callbacks import (
     ModelCheckpoint,
     RichProgressBar,
 )
-from pytorch_lightning.loggers import WandbLogger
 from typer import Option, Typer
 
 from app.dataset2 import KoCLIPDataModule
@@ -133,15 +132,8 @@ def train(
     if isinstance(limit_train_batches, int) and accumulate_grad_batches is not None:
         limit_train_batches *= accumulate_grad_batches
 
-    if not wandb_name:
-        now = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
-        name = student_model_name.split("/")[-1]
-        wandb_name = f"{name}_{now}"
-    logger.info(f"wandb name: {wandb_name}")
-
     logger.debug("set trainer")
     trainer = pl.Trainer(
-        logger=WandbLogger(name=wandb_name, project="koclip"),
         fast_dev_run=fast_dev_run,
         accelerator="auto",
         precision=16 if "bnb" not in optimizer else 32,
