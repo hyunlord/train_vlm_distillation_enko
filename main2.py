@@ -145,8 +145,9 @@ def train(
         log_every_n_steps=log_every_n_steps,
         strategy=DDPStrategy(find_unused_parameters=True)
     )
-    logger.debug("start training")
+    logger.debug("start tuning")
     trainer.tune(module, datamodule=datamodule)
+    logger.debug("start training")
     trainer.fit(module, datamodule=datamodule)
     logger.debug("training finished")
 
