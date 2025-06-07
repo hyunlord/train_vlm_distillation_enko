@@ -1,3 +1,4 @@
+import math
 import inspect
 from itertools import chain
 
@@ -124,7 +125,7 @@ class EnKoDistillationModule(pl.LightningModule):
 
         num_devices = max(1, self.trainer.num_devices)
         effective_batch_size = self.trainer.datamodule.batch_size * num_devices
-        steps_per_epoch = len(self.trainer.datamodule.train_dataloader().dataset) // effective_batch_size
+        steps_per_epoch = math.ceil(len(self.trainer.datamodule.train_dataloader().dataset) / effective_batch_size)
         total_training_steps = steps_per_epoch * self.trainer.max_epochs
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
