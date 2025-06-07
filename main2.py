@@ -23,7 +23,7 @@ class ModelTypeEnum(str, Enum):
     DUAL_ENCODER = "dual_encoder"
 
 
-@cmd.command(no_args_is_help=True)
+@cmd.command()
 def train(
     teacher_model_name: str = Option(
         "openai/clip-vit-base-patch32",
