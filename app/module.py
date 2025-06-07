@@ -1,13 +1,12 @@
 import inspect
 from itertools import chain
-from loguru import logger
 
 import torch
-import torch.nn as nn
 import pytorch_lightning as pl
-from transformers import AutoFeatureExtractor, AutoTokenizer, AutoModel, VisionTextDualEncoderModel, AutoProcessor
+from torch.optim import SGD, Adam, AdamW
+from transformers import AutoConfig, AutoTokenizer, AutoModel
 
-from .util import create_optimizer
+from .combine_model_config import CombinedModelConfig, CombinedModel
 
 
 class EnKoDistillationModule(pl.LightningModule):
@@ -17,73 +16,32 @@ class EnKoDistillationModule(pl.LightningModule):
 
         self.teacher_model_name = teacher_model_name
         self.student_model_name = student_model_name
-        self.teacher_vision_model, self.teacher_text_model, self.student_text_model = self.init_model(teacher_model_name, student_model_name)
 
-        self.vision_projection_dim = self.teacher_vision_model.config.hidden_size
-        self.text_projection_dim = self.student_text_model.config.hidden_size
-        self.text_projection = nn.Linear(self.text_projection_dim, self.vision_projection_dim)
+        teacher_vision_config = AutoConfig.from_pretrained(self.teacher_model_name).vision_config
+        student_text_config = AutoConfig.from_pretrained(self.student_model_name)
+        self.combined_config = CombinedModelConfig(
+            teacher_model_name_or_path=self.teacher_model_name,
+            student_model_name_or_path=self.student_model_name,
+            vision_projection_dim=teacher_vision_config.hidden_size,
+            text_projection_dim=student_text_config.hidden_size
+        )
+        self.combined_model = CombinedModel(config=self.combined_config)
 
         self.mse = torch.nn.MSELoss()
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
 
-    def init_model(self, teacher_model_name: str, student_model_name: str):
-        teacher_model = AutoModel.from_pretrained(teacher_model_name)
-        for param in teacher_model.parameters():
-            param.requires_grad = False
-        teacher_model.eval()
-
-        teacher_vision_model = teacher_model.vision_model
-        teacher_text_model = teacher_model.text_model
-        student_text_model = AutoModel.from_pretrained(student_model_name)
-        return teacher_vision_model, teacher_text_model, student_text_model
-
-    def configure_optimizers(self):
-        params = list(
-            chain(
-                self.student_text_model.named_parameters(),
-                self.text_projection.named_parameters(),
-            )
-        )
-
-        #no_decay = ["bias", "LayerNorm.weight"]
-        no_decay = []
-        optimizer_grouped_parameters = [
-            {
-                "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
-                "weight_decay": self.weight_decay
-            },
-            {
-                "params": [p for n, p in params if any(nd in n for nd in no_decay)],
-                "weight_decay": 0.0
-            }
-        ]
-
-        opt_class = create_optimizer(self.optimizer)
-        optimizer = opt_class(
-            optimizer_grouped_parameters,
-            lr=self.learning_rate
-        )
-
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=self.learning_rate,
-            total_steps=self.trainer.estimated_stepping_batches,
-            pct_start=0.1,
-            anneal_strategy='cos',
-            div_factor=25,
-            final_div_factor=1e4
-        )
-        scheduler_config = {"scheduler": scheduler, "interval": "step"}
-        return [optimizer], [scheduler_config]
+        self.teacher_text_model = AutoModel.from_pretrained(self.teacher_model_name).text_model
+        #for param in self.teacher_text_model.parameters():
+        #    param.requires_grad = False
+        #self.teacher_text_model.eval()
 
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
-
-        student_ko_emb = self.text_projection(self.student_text_model(**student_ko_batch)[1])
-        student_en_emb = self.text_projection(self.student_text_model(**student_en_batch)[1])
-        teacher_en_emb = self.teacher_text_model(**teacher_en_batch)[1]
+        student_ko_emb = self.combined_model.get_text_features(**student_ko_batch)
+        student_en_emb = self.combined_model.get_text_features(**student_en_batch)
+        teacher_en_emb = self.teacher_text_model.get_text_features(**teacher_en_batch)
 
         st_loss = self.mse(student_ko_emb, teacher_en_emb)
         en_loss = self.mse(student_en_emb, teacher_en_emb)
@@ -120,10 +78,58 @@ class EnKoDistillationModule(pl.LightningModule):
         )
         return loss["loss"]
 
-    def on_epoch_end(self):
-        epoch_save_dir = f"save/sigilp2_sroberta_epoch_{self.current_epoch}"
-        self.save(epoch_save_dir)
-        logger.info(f"model saved at: {epoch_save_dir}")
+    def create_optimizer(self, name: str):
+        name = name.lower()
+        if name == "adam":
+            return Adam
+        elif name == "adamw":
+            return AdamW
+        elif name == "sgd":
+            return SGD
 
-    def save(self, save_dir: str):
-        self.student.save_pretrained(save_dir)
+    def configure_optimizers(self):
+        params = list(
+            chain(
+                self.combined_model.text_model.named_parameters(),
+                self.combined_model.text_projection.named_parameters(),
+            )
+        )
+        no_decay = ["bias", "LayerNorm.weight"]
+        optimizer_grouped_parameters = [
+            {
+                "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
+                "weight_decay": self.weight_decay
+            },
+            {
+                "params": [p for n, p in params if any(nd in n for nd in no_decay)],
+                "weight_decay": 0.0
+            }
+        ]
+
+        opt_class = self.create_optimizer(self.optimizer)
+        signiture = inspect.signature(opt_class)
+        opt_kwargs = {}
+        if "capturable" in signiture.parameters:
+            opt_kwargs["capturable"] = True
+        if "weight_decouple" in signiture.parameters:
+            opt_kwargs["weight_decouple"] = True
+        if "decouple_decay" in signiture.parameters:
+            opt_kwargs["decouple_decay"] = True
+
+        optimizer = opt_class(
+            optimizer_grouped_parameters,
+            lr=self.learning_rate,
+            **opt_kwargs
+        )
+
+        num_devices = max(1, self.trainer.num_devices)
+        effective_batch_size = self.trainer.datamodule.batch_size * num_devices
+        steps_per_epoch = len(self.trainer.datamodule.train_dataloader().dataset) // effective_batch_size
+        total_training_steps = steps_per_epoch * self.trainer.max_epochs
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            self.learning_rate,
+            total_steps=total_training_steps,
+        )
+        scheduler_config = {"scheduler": scheduler, "interval": "step"}
+        return [optimizer], [scheduler_config]

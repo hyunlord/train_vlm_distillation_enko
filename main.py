@@ -6,9 +6,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, RichProgressBar
 from pytorch_lightning.strategies import DDPStrategy
 
-from app.dataset import EnKoDistillationDataModule
+from app.dataset import EnKoDataModule
 from app.module import EnKoDistillationModule
-from app.siglip_enko_distillation_module import SiglipEnKoDistillationModule
 
 cmd = Typer()
 
@@ -16,7 +15,7 @@ cmd = Typer()
 @cmd.command()
 def train(
         teacher_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
+            "google/siglip2-base-patch16-224",
             "-t", "--teacher",
             help="name of teacher model", rich_help_panel="model"
         ),
@@ -31,7 +30,7 @@ def train(
             help="optimizer name", rich_help_panel="model"
         ),
         learning_rate: float = Option(
-            1e-5,
+            5e-4,
             "-lr", "--learning-rate",
             help="learning_rate",  rich_help_panel="model"
         ),
@@ -41,7 +40,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         batch_size: int = Option(
-            64,
+            32,
             "-b", "--batch-size",
             min=1, help="batch size", rich_help_panel="model"
         ),
@@ -63,14 +62,14 @@ def train(
         )
 ):
     logger.debug("loading dataset")
-    datamodule = EnKoDistillationDataModule(
+    datamodule = EnKoDataModule(
         teacher_model_name,
         student_model_name,
         batch_size=batch_size,
         num_workers=num_workers
     )
 
-    module = SiglipEnKoDistillationModule(
+    module = EnKoDistillationModule(
         teacher_model_name,
         student_model_name,
         optimizer=optimizer,

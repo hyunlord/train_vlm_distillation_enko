@@ -114,18 +114,15 @@ class KoCLIPModule(pl.LightningModule):
         ko_en_loss = self.mse(ko_emb, en_en_emb)
         en_en_loss = self.mse(en_ko_emb, en_en_emb)
         loss = ko_en_loss + en_en_loss
-
         loss_dict = {
             "loss": loss,
             "loss_ko": ko_en_loss,
             "loss_en": en_en_loss,
         }
-
         return loss_dict
 
     def training_step(self, batch, batch_idx):
         loss = self.step(batch)
-
         self.log_dict(
             {
                 "train/loss": loss["loss"],
@@ -139,7 +136,6 @@ class KoCLIPModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss = self.step(batch)
-
         self.log_dict(
             {
                 "val/loss": loss["loss"],

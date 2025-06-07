@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from transformers import BatchEncoding
 
 
-class EnKoDistillationDataset(Dataset):
+class EnKoDataset(Dataset):
     def __init__(self, ds: HFDataset, teacher_tokenizer: PreTrainedTokenizerFast, student_tokenizer: PreTrainedTokenizerFast):
         self.ds = ds
         self.teacher_tokenizer = teacher_tokenizer
@@ -26,7 +26,7 @@ class EnKoDistillationDataset(Dataset):
         return ko, en, en
 
 
-class EnKoDistillationDataCollator:
+class EnKoDataCollator:
     def __init__(self, teacher_tokenizer: PreTrainedTokenizerFast, student_tokenizer: PreTrainedTokenizerFast):
         self.teacher_tokenizer = teacher_tokenizer
         self.student_tokenizer = student_tokenizer
@@ -39,7 +39,7 @@ class EnKoDistillationDataCollator:
         return student_ko_batch, student_en_batch, teacher_en_batch
 
 
-class EnKoDistillationDataModule(pl.LightningDataModule):
+class EnKoDataModule(pl.LightningDataModule):
     def __init__(self, teacher_tokenizer_name: str, student_tokenizer_name: str, batch_size: int = 32, num_workers: int = 8):
         super().__init__()
         self.teacher_tokenizer_name = teacher_tokenizer_name
@@ -55,8 +55,8 @@ class EnKoDistillationDataModule(pl.LightningDataModule):
         ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection", split="train+validation")
         teacher_tokenizer = AutoTokenizer.from_pretrained(self.teacher_tokenizer_name)
         student_tokenizer = AutoTokenizer.from_pretrained(self.student_tokenizer_name)
-        self.data_collator = EnKoDistillationDataCollator(teacher_tokenizer, student_tokenizer)
-        self.train_dataset = EnKoDistillationDataset(ds, teacher_tokenizer, student_tokenizer)
+        self.data_collator = EnKonDataCollator(teacher_tokenizer, student_tokenizer)
+        self.train_dataset = EnKoDataset(ds, teacher_tokenizer, student_tokenizer)
         
     def train_dataloader(self):
         return DataLoader(
