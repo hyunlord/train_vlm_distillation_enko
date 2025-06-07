@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import (
     ModelCheckpoint,
     RichProgressBar,
 )
+from pytorch_lightning.strategies import DDPStrategy
 from typer import Option, Typer
 
 from app.dataset2 import KoCLIPDataModule
@@ -140,15 +141,10 @@ def train(
         accumulate_grad_batches=accumulate_grad_batches,
         gradient_clip_val=gradient_clip_val,
         max_epochs=max_epochs,
-        limit_train_batches=limit_train_batches,
         callbacks=callbacks,
-        auto_scale_batch_size=auto_scale_batch_size,
         log_every_n_steps=log_every_n_steps,
+        strategy=DDPStrategy(find_unused_parameters=True)
     )
-    if auto_scale_batch_size:
-        logger.debug("auto scale batch size")
-        trainer.tune(module, datamodule=datamodule)
-
     logger.debug("start training")
     trainer.fit(module, datamodule=datamodule, ckpt_path=resume_from_checkpoint)
     logger.debug("training finished")
