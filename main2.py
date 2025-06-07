@@ -80,7 +80,7 @@ def train(
         help="auto find batch size, ignore batch_size option",
         rich_help_panel="train",
     ),
-    max_epochs: int = Option(3, help="max epochs", rich_help_panel="train"),
+    max_epochs: int = Option(5, help="max epochs", rich_help_panel="train"),
     steps_per_epoch: Optional[int] = Option(
         None, min=1, help="steps per epoch", rich_help_panel="train"
     ),
