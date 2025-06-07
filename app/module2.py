@@ -121,6 +121,10 @@ class KoCLIPModule(pl.LightningModule):
         ko_batch, en_ko_batch, en_en_batch = batch
 
         if self.model_type == "clip":
+            print(self.student.text_model)
+            print()
+            print(ko_batch)
+            assert 1==2
             ko_emb = self.student.text_model(**ko_batch)[1]
             en_ko_emb = self.student.text_model(**en_ko_batch)[1]
             en_en_emb = self.teacher.text_model(**en_en_batch)[1]
