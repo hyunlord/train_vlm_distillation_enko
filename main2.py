@@ -146,7 +146,7 @@ def train(
         strategy=DDPStrategy(find_unused_parameters=True)
     )
     logger.debug("start training")
-    trainer.fit(module, datamodule=datamodule, ckpt_path=resume_from_checkpoint)
+    trainer.fit(module, datamodule=datamodule)
     logger.debug("training finished")
 
     module.save(save_path)
