@@ -49,7 +49,7 @@ def train(
             help="num_workers", rich_help_panel="train"
         ),
         max_epochs: int = Option(
-            3,
+            5,
             help="max_epochs", rich_help_panel="train"
         ),
         log_every_n_steps: int = Option(
