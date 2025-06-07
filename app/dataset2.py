@@ -34,7 +34,6 @@ class KoCLIPDataset(Dataset):
         ko_token = self.ko_tokenizer(ko, truncation=True)
         en_ko_token = self.ko_tokenizer(en, truncation=True)
         en_en_token = self.en_tokenizer(en, truncation=True)
-
         return ko_token, en_ko_token, en_en_token
 
 
@@ -53,13 +52,8 @@ class KoCLIPDataCollator:
     ):
         ko_token, en_ko_token, en_en_token = zip(*features)
         ko_batch = self.ko_tokenizer.pad(ko_token, padding=True, return_tensors="pt")
-        en_ko_batch = self.ko_tokenizer.pad(
-            en_ko_token, padding=True, return_tensors="pt"
-        )
-        en_en_batch = self.en_tokenizer.pad(
-            en_en_token, padding=True, return_tensors="pt"
-        )
-
+        en_ko_batch = self.ko_tokenizer.pad(en_ko_token, padding=True, return_tensors="pt")
+        en_en_batch = self.en_tokenizer.pad(en_en_token, padding=True, return_tensors="pt")
         return ko_batch, en_ko_batch, en_en_batch
 
 
@@ -90,12 +84,8 @@ class KoCLIPDataModule(pl.LightningDataModule):
             "hyunlord/aihub_ko-en_parallel_corpus_collection",
             split="train+validation"
         )
-        en_tokenizer = AutoTokenizer.from_pretrained(
-            self.en_tokenizer_name, use_auth_token=self.use_auth_token
-        )
-        ko_tokenizer = AutoTokenizer.from_pretrained(
-            self.ko_tokenizer_name, use_auth_token=self.use_auth_token
-        )
+        en_tokenizer = AutoTokenizer.from_pretrained(self.en_tokenizer_name)
+        ko_tokenizer = AutoTokenizer.from_pretrained(self.ko_tokenizer_name)
         self.data_collator = KoCLIPDataCollator(en_tokenizer, ko_tokenizer)
         self.train_dataset = KoCLIPDataset(ds, en_tokenizer, ko_tokenizer)
 
