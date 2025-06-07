@@ -33,7 +33,7 @@ class EnKoDistillationModule(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
 
-        self.teacher_text_model = AutoModel.from_pretrained(self.teacher_model_name).text_model
+        self.teacher_model = AutoModel.from_pretrained(self.teacher_model_name)
         #for param in self.teacher_text_model.parameters():
         #    param.requires_grad = False
         #self.teacher_text_model.eval()
@@ -42,7 +42,7 @@ class EnKoDistillationModule(pl.LightningModule):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
         student_ko_emb = self.combined_model.get_text_features(**student_ko_batch)
         student_en_emb = self.combined_model.get_text_features(**student_en_batch)
-        teacher_en_emb = self.teacher_text_model.get_text_features(**teacher_en_batch)
+        teacher_en_emb = self.teacher_model.get_text_features(**teacher_en_batch)
 
         st_loss = self.mse(student_ko_emb, teacher_en_emb)
         en_loss = self.mse(student_en_emb, teacher_en_emb)
