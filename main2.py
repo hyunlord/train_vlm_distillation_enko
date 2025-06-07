@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import (
     ModelCheckpoint,
     RichProgressBar,
 )
+from lightning.pytorch.tuner import Tuner
 from pytorch_lightning.strategies import DDPStrategy
 from typer import Option, Typer
 
@@ -145,8 +146,6 @@ def train(
         log_every_n_steps=log_every_n_steps,
         strategy=DDPStrategy(find_unused_parameters=True)
     )
-    logger.debug("start tuning")
-    trainer.tune(module, datamodule=datamodule)
     logger.debug("start training")
     trainer.fit(module, datamodule=datamodule)
     logger.debug("training finished")
