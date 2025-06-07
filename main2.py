@@ -136,11 +136,8 @@ def train(
 
     logger.debug("set trainer")
     trainer = pl.Trainer(
-        fast_dev_run=fast_dev_run,
         accelerator="auto",
         precision=16 if "bnb" not in optimizer else 32,
-        accumulate_grad_batches=accumulate_grad_batches,
-        gradient_clip_val=gradient_clip_val,
         max_epochs=max_epochs,
         callbacks=callbacks,
         log_every_n_steps=log_every_n_steps,
