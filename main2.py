@@ -110,13 +110,9 @@ def train(
         use_auth_token=use_auth_token,
     )
     logger.debug("loading model")
-    if isinstance(model_type, ModelTypeEnum):
-        model_type = model_type.value
-
     module = KoCLIPModule(
         teacher_model_name,
         student_model_name,
-        model_type=model_type,
         optimizer=optimizer,
         learning_rate=learning_rate,
         weight_decay=weight_decay,

@@ -22,7 +22,6 @@ class KoCLIPModule(pl.LightningModule):
         self,
         teacher_model_name: str,
         student_model_name: str,
-        model_type: Literal["clip", "dual_encoder"] = "clip",
         optimizer: str = "adamw",
         learning_rate: float = 5e-4,
         weight_decay: float = 1e-4,
@@ -34,7 +33,6 @@ class KoCLIPModule(pl.LightningModule):
         # init model
         self.teacher_model_name = teacher_model_name
         self.student_model_name = student_model_name
-        self.model_type = model_type
         self.use_auth_token = use_auth_token
         self.teacher, self.student = self.init_model(
             teacher_model_name, student_model_name
@@ -50,31 +48,21 @@ class KoCLIPModule(pl.LightningModule):
             teacher_model_name
         )
 
-        if self.model_type == "clip":
-            student = CLIPModel.from_pretrained(
-                student_model_name
-            )
-        else:
-            student = VisionTextDualEncoderModel.from_vision_text_pretrained(
-                teacher_model_name, student_model_name
-            )
-
-            vp_state = teacher.visual_projection.state_dict()
-            student.visual_projection.load_state_dict(vp_state)
-            student.logit_scale = teacher.logit_scale
-
+        student = VisionTextDualEncoderModel.from_vision_text_pretrained(
+            teacher_model_name, student_model_name
+        )
+        vp_state = teacher.visual_projection.state_dict()
+        student.visual_projection.load_state_dict(vp_state)
+        student.logit_scale = teacher.logit_scale
         return teacher, student
 
     def configure_optimizers(self):
-        if self.model_type == "clip":
-            params = list(self.student.text_model.named_parameters())
-        else:
-            params = list(
-                chain(
-                    self.student.text_model.named_parameters(),
-                    self.student.text_projection.named_parameters(),
-                )
+        params = list(
+            chain(
+                self.student.text_model.named_parameters(),
+                self.student.text_projection.named_parameters(),
             )
+        )
 
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
@@ -119,19 +107,9 @@ class KoCLIPModule(pl.LightningModule):
 
     def step(self, batch):
         ko_batch, en_ko_batch, en_en_batch = batch
-
-        if self.model_type == "clip":
-            print(self.student.text_model)
-            print()
-            print(ko_batch)
-            assert 1==2
-            ko_emb = self.student.text_model(**ko_batch)[1]
-            en_ko_emb = self.student.text_model(**en_ko_batch)[1]
-            en_en_emb = self.teacher.text_model(**en_en_batch)[1]
-        else:
-            ko_emb = self.student.get_text_features(**ko_batch)
-            en_ko_emb = self.student.get_text_features(**en_ko_batch)
-            en_en_emb = self.teacher.get_text_features(**en_en_batch)
+        ko_emb = self.student.get_text_features(**ko_batch)
+        en_ko_emb = self.student.get_text_features(**en_ko_batch)
+        en_en_emb = self.teacher.get_text_features(**en_en_batch)
 
         ko_en_loss = self.mse(ko_emb, en_en_emb)
         en_en_loss = self.mse(en_ko_emb, en_en_emb)
@@ -178,14 +156,8 @@ class KoCLIPModule(pl.LightningModule):
         tokenizer = AutoTokenizer.from_pretrained(
             self.student_model_name
         )
-
-        if self.model_type == "clip":
-            processor = CLIPProcessor.from_pretrained(
-                self.student_model_name
-            )
-        else:
-            feature_extractor = AutoFeatureExtractor.from_pretrained(
-                self.teacher_model_name
-            )
-            processor = VisionTextDualEncoderProcessor(feature_extractor, tokenizer)
+        feature_extractor = AutoFeatureExtractor.from_pretrained(
+            self.teacher_model_name
+        )
+        processor = VisionTextDualEncoderProcessor(feature_extractor, tokenizer)
         processor.save_pretrained(save_dir)
