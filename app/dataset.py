@@ -49,10 +49,12 @@ class EnKoDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         # "traintogpb/aihub-koen-translation-integrated-large-10m"
-        load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection", split="train+validation")
+        load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection",
+                     split="train+validation")
         
     def setup(self, stage=None):
-        ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection", split="train[:1000]")
+        ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection",
+                                     split="train+validation")
         teacher_tokenizer = AutoTokenizer.from_pretrained(self.teacher_tokenizer_name)
         student_tokenizer = AutoTokenizer.from_pretrained(self.student_tokenizer_name)
         self.data_collator = EnKoDataCollator(teacher_tokenizer, student_tokenizer)
