@@ -77,7 +77,7 @@ class EnKoDistillationModule(pl.LightningModule):
         self.log_dict(
             {
                 "train/loss": loss["loss"],
-                "train/loss_ko": loss["loss_ko"],
+                "train/loss_st": loss["loss_st"],
                 "train/loss_en": loss["loss_en"],
             },
             on_step=True,
@@ -90,7 +90,7 @@ class EnKoDistillationModule(pl.LightningModule):
         self.log_dict(
             {
                 "val/loss": loss["loss"],
-                "val/loss_ko": loss["loss_ko"],
+                "val/loss_st": loss["loss_st"],
                 "val/loss_en": loss["loss_en"],
             },
             on_epoch=True,
