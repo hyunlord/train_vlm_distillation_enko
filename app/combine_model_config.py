@@ -5,7 +5,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 
 class CombinedModelConfig(PretrainedConfig):
-    model_type = "combined_sigilp2_sroberta"
+    model_type = "siglip2"
 
     def __init__(self,
                  teacher_model_name_or_path="google/siglip2-base-patch16-224",
@@ -22,7 +22,7 @@ class CombinedModelConfig(PretrainedConfig):
 
 class CombinedModel(PreTrainedModel):
     config_class = CombinedModelConfig
-    base_model_prefix = "combined_sigilp2_sroberta"
+    base_model_prefix = "siglip2"
 
     def __init__(self, config: CombinedModelConfig):
         super().__init__(config)
@@ -66,12 +66,9 @@ class CombinedModel(PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        image_embeds = vision_outputs.pooler_output
-        text_embeds = text_outputs.pooler_output
-
         # normalized features
-        image_embeds = image_embeds / image_embeds.norm(p=2, dim=-1, keepdim=True)
-        text_embeds = text_embeds / text_embeds.norm(p=2, dim=-1, keepdim=True)
+        image_embeds = vision_outputs / vision_outputs.norm(p=2, dim=-1, keepdim=True)
+        text_embeds = text_outputs / text_outputs.norm(p=2, dim=-1, keepdim=True)
 
         # cosine similarity as logits
         logits_per_text = torch.matmul(text_embeds, image_embeds.t().to(text_embeds.device))

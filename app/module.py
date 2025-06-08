@@ -12,7 +12,13 @@ from .combine_model_config import CombinedModelConfig, CombinedModel
 
 
 class EnKoDistillationModule(pl.LightningModule):
-    def __init__(self, teacher_model_name: str, student_model_name: str, optimizer: str = "adamw", learning_rate: float = 5e-4, weight_decay: float = 1e-4):
+    def __init__(self,
+                 teacher_model_name: str,
+                 student_model_name: str,
+                 model_type: str = "siglipe2",
+                 optimizer: str = "adamw",
+                 learning_rate: float = 5e-4,
+                 weight_decay: float = 1e-4):
         super().__init__()
         self.save_hyperparameters()
 
@@ -35,9 +41,9 @@ class EnKoDistillationModule(pl.LightningModule):
         self.weight_decay = weight_decay
 
         self.teacher_model = AutoModel.from_pretrained(self.teacher_model_name)
-        #for param in self.teacher_text_model.parameters():
-        #    param.requires_grad = False
-        #self.teacher_text_model.eval()
+        for param in self.teacher_text_model.parameters():
+            param.requires_grad = False
+        self.teacher_text_model.eval()
 
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch

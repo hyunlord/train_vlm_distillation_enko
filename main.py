@@ -24,13 +24,21 @@ def train(
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
+        model_type: str = Option(
+            "siglip2",
+            "-m",
+            "--model-type",
+            help="model type",
+            rich_help_panel="model",
+            case_sensitive=False,
+        ),
         optimizer: str = Option(
             "adamw",
             "-o", "--optimizer",
             help="optimizer name", rich_help_panel="model"
         ),
         learning_rate: float = Option(
-            5e-4,
+            1e-5,
             "-lr", "--learning-rate",
             help="learning_rate",  rich_help_panel="model"
         ),
@@ -40,7 +48,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         batch_size: int = Option(
-            32,
+            64,
             "-b", "--batch-size",
             min=1, help="batch size", rich_help_panel="model"
         ),
@@ -72,6 +80,7 @@ def train(
     module = EnKoDistillationModule(
         teacher_model_name,
         student_model_name,
+        model_type=model_type,
         optimizer=optimizer,
         learning_rate=learning_rate,
         weight_decay=weight_decay
