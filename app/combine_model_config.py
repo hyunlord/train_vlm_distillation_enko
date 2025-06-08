@@ -2,10 +2,12 @@ from typing import Any, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from dataclasses import dataclass
 from transformers import PretrainedConfig, PreTrainedModel, AutoModel
 from transformers.modeling_outputs import ModelOutput, BaseModelOutputWithPooling
 
 
+@dataclass
 class Siglip2Output(ModelOutput):
     loss: Optional[torch.FloatTensor] = None
     logits_per_image: Optional[torch.FloatTensor] = None
@@ -101,7 +103,7 @@ class CombinedModel(PreTrainedModel):
             loglik = torch.nn.functional.logsigmoid(m1_diag1 * logits_per_text)
             nll = -torch.sum(loglik, dim=-1)
             loss = nll.mean()
-        return BaseModelOutput(
+        return Siglip2Output(
             loss=loss,
             logits_per_image=logits_per_image,
             logits_per_text=logits_per_text,
