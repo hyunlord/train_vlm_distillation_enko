@@ -147,6 +147,9 @@ class KoCLIPModule(pl.LightningModule):
         )
         return loss["loss"]
 
+    def epoch_end(self):
+        self.save()
+
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
 

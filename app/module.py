@@ -142,6 +142,9 @@ class EnKoDistillationModule(pl.LightningModule):
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
 
+    def epoch_end(self):
+        self.save()
+
     def save(self, save_dir: str = "save/my_model"):
         self.combined_model.save_pretrained(save_dir)
 
