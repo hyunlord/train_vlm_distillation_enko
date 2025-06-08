@@ -1,7 +1,25 @@
-from transformers import PretrainedConfig, PreTrainedModel, AutoModel
+from typing import Any, Optional, Tuple
+
 import torch
 import torch.nn as nn
-from transformers.modeling_outputs import BaseModelOutput
+from transformers import PretrainedConfig, PreTrainedModel, AutoModel
+from transformers.modeling_outputs import ModelOutput, BaseModelOutputWithPooling
+
+
+class Siglip2Output(ModelOutput):
+    loss: Optional[torch.FloatTensor] = None
+    logits_per_image: Optional[torch.FloatTensor] = None
+    logits_per_text: Optional[torch.FloatTensor] = None
+    text_embeds: Optional[torch.FloatTensor] = None
+    image_embeds: Optional[torch.FloatTensor] = None
+    text_model_output: BaseModelOutputWithPooling = None
+    vision_model_output: BaseModelOutputWithPooling = None
+
+    def to_tuple(self) -> Tuple[Any]:
+        return tuple(
+            self[k] if k not in ["text_model_output", "vision_model_output"] else getattr(self, k).to_tuple()
+            for k in self.keys()
+        )
 
 
 class CombinedModelConfig(PretrainedConfig):
