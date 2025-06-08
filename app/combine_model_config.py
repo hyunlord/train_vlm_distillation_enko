@@ -129,6 +129,6 @@ class CombinedModel(PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states
         )
-        sentence_embeddings = self.mean_pooling(text_outputs, attention_mask)
+        sentence_embeddings = self._mean_pooling(text_outputs, attention_mask)
         projected_outputs = self.text_projection(sentence_embeddings)
         return projected_outputs
