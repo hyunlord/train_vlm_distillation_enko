@@ -5,7 +5,8 @@ from itertools import chain
 import torch
 import pytorch_lightning as pl
 from torch.optim import SGD, Adam, AdamW
-from transformers import AutoConfig, AutoTokenizer, AutoModel
+from transformers import AutoConfig, AutoTokenizer, AutoModel, AutoFeatureExtractor, AutoProcessor
+from transformers import AutoImageProcessor, SiglipProcessor
 
 from .combine_model_config import CombinedModelConfig, CombinedModel
 
@@ -134,3 +135,11 @@ class EnKoDistillationModule(pl.LightningModule):
         )
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
+
+    def save(self, save_dir: str = "save/my_model"):
+        self.combined_model.save_pretrained(save_dir)
+
+        tokenizer = AutoTokenizer.from_pretrained(self.student_model_name)
+        image_processor = AutoImageProcessor.from_pretrained(self.teacher_model_name)
+        processor = SiglipProcessor(image_processor=image_processor, tokenizer=tokenizer)
+        processor.save_pretrained(save_dir)
