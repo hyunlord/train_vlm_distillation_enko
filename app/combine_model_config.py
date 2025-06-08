@@ -25,7 +25,7 @@ class Siglip2Output(ModelOutput):
 
 
 class CombinedModelConfig(PretrainedConfig):
-    model_type = "siglip2"
+    model_type = "combined_siglip2_sroberta"
 
     def __init__(self,
                  teacher_model_name_or_path="google/siglip2-base-patch16-224",
@@ -42,7 +42,7 @@ class CombinedModelConfig(PretrainedConfig):
 
 class CombinedModel(PreTrainedModel):
     config_class = CombinedModelConfig
-    base_model_prefix = "siglip2"
+    base_model_prefix = "combined_siglip2_sroberta"
 
     def __init__(self, config: CombinedModelConfig):
         super().__init__(config)
