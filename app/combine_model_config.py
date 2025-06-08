@@ -108,8 +108,6 @@ class CombinedModel(PreTrainedModel):
 
             vision_outputs = self.vision_model(
                 pixel_values=pixel_values,
-                attention_mask=pixel_attention_mask,
-                spatial_shapes=spatial_shapes,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
             )
