@@ -80,7 +80,6 @@ def train(
     module = EnKoDistillationModule(
         teacher_model_name,
         student_model_name,
-        model_type=model_type,
         optimizer=optimizer,
         learning_rate=learning_rate,
         weight_decay=weight_decay

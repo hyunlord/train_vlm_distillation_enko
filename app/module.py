@@ -16,7 +16,6 @@ class EnKoDistillationModule(pl.LightningModule):
     def __init__(self,
                  teacher_model_name: str,
                  student_model_name: str,
-                 model_type: str = "siglipe2",
                  optimizer: str = "adamw",
                  learning_rate: float = 5e-4,
                  weight_decay: float = 1e-4):
