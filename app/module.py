@@ -4,6 +4,7 @@ from itertools import chain
 
 import torch
 import pytorch_lightning as pl
+import torch.nn.functional as F
 from torch.optim import SGD, Adam, AdamW
 from transformers import AutoConfig, AutoTokenizer, AutoModel, AutoFeatureExtractor, AutoProcessor
 from transformers import AutoImageProcessor, SiglipProcessor
@@ -36,6 +37,8 @@ class EnKoDistillationModule(pl.LightningModule):
         self.combined_model = CombinedModel(config=self.combined_config)
 
         self.mse = torch.nn.MSELoss()
+        self.cosine_loss = torch.nn.CosineEmbeddingLoss()
+
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
@@ -51,10 +54,20 @@ class EnKoDistillationModule(pl.LightningModule):
         student_en_emb = self.combined_model.get_text_features(**student_en_batch)
         teacher_en_emb = self.teacher_model.get_text_features(**teacher_en_batch)
 
-        st_loss = self.mse(student_ko_emb, teacher_en_emb)
-        en_loss = self.mse(student_en_emb, teacher_en_emb)
-        loss = st_loss + en_loss
+        target = torch.ones(student_ko_emb.size(0), device=self.device)
 
+        st_loss = self.cosine_loss(student_ko_emb, teacher_en_emb, target)
+        en_loss = self.cosine_loss(student_en_emb, teacher_en_emb, target)
+
+        '''
+        student_ko_emb_norm = F.normalize(student_ko_emb, p=2, dim=1)
+        student_en_emb_norm = F.normalize(student_en_emb, p=2, dim=1)
+        teacher_en_emb_norm = F.normalize(teacher_en_emb, p=2, dim=1)
+
+        st_loss = self.mse(student_ko_emb_norm, teacher_en_emb_norm)
+        en_loss = self.mse(student_en_emb_norm, teacher_en_emb_norm)
+        '''
+        loss = st_loss + en_loss
         loss_dict = {
             "loss": loss,
             "loss_st": st_loss,
