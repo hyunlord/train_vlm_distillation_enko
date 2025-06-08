@@ -1,6 +1,7 @@
 from transformers import PretrainedConfig, PreTrainedModel, AutoModel
 import torch
 import torch.nn as nn
+from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 
 class CombinedModelConfig(PretrainedConfig):
@@ -46,6 +47,55 @@ class CombinedModel(PreTrainedModel):
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
 
+    def forward(self, input_ids=None, pixel_values=None, attention_mask=None, position_ids=None, return_loss=None,
+                output_attentions=None, output_hidden_states=None, interpolate_pos_encoding=None):
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+
+        vision_outputs = self.get_vision_features(
+            pixel_values=pixel_values,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states
+        )
+        text_outputs = self.get_text_features(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+        )
+        image_embeds = vision_outputs.pooler_output
+        text_embeds = text_outputs.pooler_output
+
+        # normalized features
+        image_embeds = image_embeds / image_embeds.norm(p=2, dim=-1, keepdim=True)
+        text_embeds = text_embeds / text_embeds.norm(p=2, dim=-1, keepdim=True)
+
+        # cosine similarity as logits
+        logits_per_text = torch.matmul(text_embeds, image_embeds.t().to(text_embeds.device))
+        logit_scale, logit_bias = self.logit_scale.to(text_embeds.device), self.logit_bias.to(text_embeds.device)
+        logits_per_text = logits_per_text * logit_scale.exp() + logit_bias
+        logits_per_image = logits_per_text.t()
+
+        loss = None
+        if return_loss:
+            eye = torch.eye(logits_per_text.size(0), device=logits_per_text.device)
+            m1_diag1 = -torch.ones_like(logits_per_text) + 2 * eye
+            loglik = torch.nn.functional.logsigmoid(m1_diag1 * logits_per_text)
+            nll = -torch.sum(loglik, dim=-1)
+            loss = nll.mean()
+        return BaseModelOutputWithPooling(
+            loss=loss,
+            logits_per_image=logits_per_image,
+            logits_per_text=logits_per_text,
+            text_embeds=text_embeds,
+            image_embeds=image_embeds,
+            text_model_output=text_outputs,
+            vision_model_output=vision_outputs,
+        )
+
     def _mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output[0]
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
@@ -82,6 +132,6 @@ class CombinedModel(PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states
         )
-        pooled_output = text_outputs.pooler_output
-        projected_outputs = self.text_projection(pooled_output)
+        sentence_embeddings = self.mean_pooling(text_outputs, attention_mask)
+        projected_outputs = self.text_projection(sentence_embeddings)
         return projected_outputs
