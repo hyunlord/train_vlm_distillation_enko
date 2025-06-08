@@ -3,8 +3,9 @@ import inspect
 from itertools import chain
 from typing import Literal
 
-import pytorch_lightning as pl
 import torch
+import pytorch_lightning as pl
+import torch.nn.functional as F
 from loguru import logger
 from transformers import (
     AutoModel,
@@ -52,10 +53,59 @@ class EnKoDistillationModule(pl.LightningModule):
         student.logit_scale = teacher.logit_scale
         student.logit_bias = teacher.logit_bias
 
-        #for param in teacher.parameters():
-        #    param.requires_grad = False
-        #teacher.eval()
+        for param in teacher.parameters():
+            param.requires_grad = False
+        teacher.eval()
         return teacher, student
+
+    def step(self, batch):
+        student_ko_batch, student_en_batch, teacher_en_batch = batch
+        student_ko_emb = self.student.get_text_features(**student_ko_batch)
+        student_en_emb = self.student.get_text_features(**student_en_batch)
+        teacher_en_emb = self.teacher.get_text_features(**teacher_en_batch)
+
+        target = torch.ones(student_ko_emb.size(0), device=self.device)
+        st_loss = self.cosine_loss(student_ko_emb, teacher_en_emb, target)
+        en_loss = self.cosine_loss(student_en_emb, teacher_en_emb, target)
+        '''
+        student_ko_emb_norm = F.normalize(student_ko_emb, p=2, dim=1)
+        student_en_emb_norm = F.normalize(student_en_emb, p=2, dim=1)
+        teacher_en_emb_norm = F.normalize(teacher_en_emb, p=2, dim=1)
+        st_loss = self.mse(student_ko_emb_norm, teacher_en_emb_norm)
+        en_loss = self.mse(student_en_emb_norm, teacher_en_emb_norm)
+        '''
+        loss = st_loss + en_loss
+        loss_dict = {
+            "loss": loss,
+            "loss_st": st_loss,
+            "loss_en": en_loss,
+        }
+        return loss_dict
+
+    def training_step(self, batch, batch_idx):
+        loss = self.step(batch)
+        self.log_dict(
+            {
+                "train/loss": loss["loss"],
+                "train/loss_ko": loss["loss_ko"],
+                "train/loss_en": loss["loss_en"],
+            },
+            on_step=True,
+            on_epoch=True,
+        )
+        return loss["loss"]
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.step(batch)
+        self.log_dict(
+            {
+                "val/loss": loss["loss"],
+                "val/loss_ko": loss["loss_ko"],
+                "val/loss_en": loss["loss_en"],
+            },
+            on_epoch=True,
+        )
+        return loss["loss"]
 
     def configure_optimizers(self):
         params = list(
@@ -105,47 +155,6 @@ class EnKoDistillationModule(pl.LightningModule):
 
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
-
-    def step(self, batch):
-        student_ko_batch, student_en_batch, teacher_en_batch = batch
-        student_ko_emb = self.student.get_text_features(**student_ko_batch)
-        student_en_emb = self.student.get_text_features(**student_en_batch)
-        teacher_en_emb = self.teacher.get_text_features(**teacher_en_batch)
-
-        st_loss = self.mse(student_ko_emb, teacher_en_emb)
-        en_loss = self.mse(student_en_emb, teacher_en_emb)
-        loss = st_loss + en_loss
-        loss_dict = {
-            "loss": loss,
-            "loss_st": st_loss,
-            "loss_en": en_loss,
-        }
-        return loss_dict
-
-    def training_step(self, batch, batch_idx):
-        loss = self.step(batch)
-        self.log_dict(
-            {
-                "train/loss": loss["loss"],
-                "train/loss_ko": loss["loss_ko"],
-                "train/loss_en": loss["loss_en"],
-            },
-            on_step=True,
-            on_epoch=True,
-        )
-        return loss["loss"]
-
-    def validation_step(self, batch, batch_idx):
-        loss = self.step(batch)
-        self.log_dict(
-            {
-                "val/loss": loss["loss"],
-                "val/loss_ko": loss["loss_ko"],
-                "val/loss_en": loss["loss_en"],
-            },
-            on_epoch=True,
-        )
-        return loss["loss"]
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
