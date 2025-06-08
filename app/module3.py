@@ -34,6 +34,8 @@ class EnKoDistillationModule(pl.LightningModule):
         self.teacher, self.student = self.init_model(teacher_model_name, student_model_name)
 
         self.mse = torch.nn.MSELoss()
+        self.cosine_loss = torch.nn.CosineEmbeddingLoss()
+
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
