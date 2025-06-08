@@ -1,23 +1,20 @@
 import math
 import inspect
 from itertools import chain
-from typing import Literal
+
+from loguru import logger
+import pytorch_lightning as pl
 
 import torch
-import pytorch_lightning as pl
 import torch.nn.functional as F
-from loguru import logger
+from torch.optim import SGD, Adam, AdamW
+
 from transformers import (
     AutoModel,
     AutoFeatureExtractor,
     AutoTokenizer,
-    VisionTextDualEncoderModel,
-    VisionTextDualEncoderProcessor,
-    AutoImageProcessor,
-    SiglipProcessor
+    AutoProcessor
 )
-
-from .util import create_optimizer
 
 
 class EnKoDistillationModule(pl.LightningModule):
@@ -46,13 +43,7 @@ class EnKoDistillationModule(pl.LightningModule):
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
-        student = VisionTextDualEncoderModel.from_vision_text_pretrained(teacher_model_name, student_model_name)
-
-        vp_state = teacher.visual_projection.state_dict()
-        student.visual_projection.load_state_dict(vp_state)
-        student.logit_scale = teacher.logit_scale
-        student.logit_bias = teacher.logit_bias
-
+        student = AutoModel.from_pretrained(student_model_name)
         for param in teacher.parameters():
             param.requires_grad = False
         teacher.eval()
@@ -63,17 +54,19 @@ class EnKoDistillationModule(pl.LightningModule):
         student_ko_emb = self.student.get_text_features(**student_ko_batch)
         student_en_emb = self.student.get_text_features(**student_en_batch)
         teacher_en_emb = self.teacher.get_text_features(**teacher_en_batch)
-
+        '''
         target = torch.ones(student_ko_emb.size(0), device=self.device)
         st_loss = self.cosine_loss(student_ko_emb, teacher_en_emb, target)
         en_loss = self.cosine_loss(student_en_emb, teacher_en_emb, target)
-        '''
+
         student_ko_emb_norm = F.normalize(student_ko_emb, p=2, dim=1)
         student_en_emb_norm = F.normalize(student_en_emb, p=2, dim=1)
         teacher_en_emb_norm = F.normalize(teacher_en_emb, p=2, dim=1)
         st_loss = self.mse(student_ko_emb_norm, teacher_en_emb_norm)
         en_loss = self.mse(student_en_emb_norm, teacher_en_emb_norm)
         '''
+        st_loss = self.mse(student_ko_emb, teacher_en_emb)
+        en_loss = self.mse(student_en_emb, teacher_en_emb)
         loss = st_loss + en_loss
         loss_dict = {
             "loss": loss,
@@ -107,6 +100,15 @@ class EnKoDistillationModule(pl.LightningModule):
         )
         return loss["loss"]
 
+    def create_optimizer(self, name: str):
+        name = name.lower()
+        if name == "adam":
+            return Adam
+        elif name == "adamw":
+            return AdamW
+        elif name == "sgd":
+            return SGD
+
     def configure_optimizers(self):
         params = list(
             chain(
@@ -127,7 +129,7 @@ class EnKoDistillationModule(pl.LightningModule):
             },
         ]
 
-        opt_class = create_optimizer(self.optimizer)
+        opt_class = self.create_optimizer(self.optimizer)
         signiture = inspect.signature(opt_class)
         opt_kwargs = {}
         if "capturable" in signiture.parameters:
@@ -158,9 +160,6 @@ class EnKoDistillationModule(pl.LightningModule):
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
-
-        tokenizer = AutoTokenizer.from_pretrained(self.student_model_name)
-        image_processor = AutoImageProcessor.from_pretrained(self.teacher_model_name)
-        processor = SiglipProcessor(image_processor=image_processor, tokenizer=tokenizer)
+        processor = AutoProcessor.from_pretrained(self.student_model_name)
         processor.save_pretrained(save_dir)
 
