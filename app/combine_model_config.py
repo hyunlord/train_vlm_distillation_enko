@@ -1,7 +1,7 @@
 from transformers import PretrainedConfig, PreTrainedModel, AutoModel
 import torch
 import torch.nn as nn
-from transformers.modeling_outputs import BaseModelOutputWithPooling
+from transformers.modeling_outputs import BaseModelOutput
 
 
 class CombinedModelConfig(PretrainedConfig):
