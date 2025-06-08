@@ -1,12 +1,9 @@
 import math
 import inspect
-from itertools import chain
 
-from loguru import logger
 import pytorch_lightning as pl
 
 import torch
-import torch.nn.functional as F
 from torch.optim import SGD, Adam, AdamW
 
 from transformers import (
@@ -110,12 +107,7 @@ class EnKoDistillationModule(pl.LightningModule):
             return SGD
 
     def configure_optimizers(self):
-        params = list(
-            chain(
-                self.student.text_model.named_parameters(),
-                self.student.text_projection.named_parameters(),
-            )
-        )
+        params = list(self.student.text_model.named_parameters())
 
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
