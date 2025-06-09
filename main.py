@@ -20,7 +20,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "google/siglip2-base-patch16-224",
+            "lassl/roberta-ko-small",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
