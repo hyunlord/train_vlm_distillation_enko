@@ -1,10 +1,13 @@
 import math
 import inspect
+from loguru import logger
 
 import torch
 import pytorch_lightning as pl
 import torch.nn.functional as F
 from torch.optim import SGD, Adam, AdamW
+
+from peft import get_peft_model, LoraConfig, TaskType
 
 from transformers import (
     AutoModel,
@@ -22,16 +25,20 @@ class EnKoDistillationModule(pl.LightningModule):
         optimizer: str = "adamw",
         learning_rate: float = 5e-4,
         weight_decay: float = 1e-4,
-        use_auth_token: bool = False,
+
+        lora_r: int = 8,
+        lora_alpha: int = 16,
+        lora_dropout: float = 0.05,
+        lora_target_modules: list = None
     ):
         super().__init__()
         self.save_hyperparameters()
+        logger.debug(f"hyperparameters: {self.hparams}")
 
         # init model
-        self.teacher_model_name = teacher_model_name
-        self.student_model_name = student_model_name
-        self.use_auth_token = use_auth_token
-        self.teacher, self.student = self.init_model(teacher_model_name, student_model_name)
+        self.teacher, self.student = self.init_model(self.hparams.teacher_model_name,
+                                                     self.hparams.student_model_name)
+        self.print_trainable_parameters()
 
         self.mse = torch.nn.MSELoss()
         self.cosine_loss = torch.nn.CosineEmbeddingLoss()
@@ -42,11 +49,37 @@ class EnKoDistillationModule(pl.LightningModule):
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
-        student = AutoModel.from_pretrained(student_model_name)
         for param in teacher.parameters():
             param.requires_grad = False
         teacher.eval()
+
+        student = AutoModel.from_pretrained(student_model_name)
+        for param in student.vision_model.parameters():
+            param.requires_grad = False
+
+        if self.hparams.lora_target_modules is None:
+            self.hparams.lora_target_modules = ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
+        lora_config = LoraConfig(
+            r=self.hparams.lora_r,
+            lora_alpha=self.hparams.lora_alpha,
+            target_modules=self.hparams.lora_target_modules,
+            lora_dropout=self.hparams.lora_dropout,
+            bias="none",
+        )
+        student.text_model = get_peft_model(student.text_model, lora_config)
         return teacher, student
+
+    def print_trainable_parameters(self):
+        trainable_params = 0
+        all_param = 0
+        for _, param in self.student.named_parameters():
+            all_param += param.numel()
+            if param.requires_grad:
+                trainable_params += param.numel()
+        print(
+            f"trainable params: {trainable_params} || all params: {all_param} || "
+            f"trainable%: {100 * trainable_params / all_param:.2f}"
+        )
 
     def step(self, batch):
         student_ko_batch, student_en_batch, teacher_en_batch = batch
