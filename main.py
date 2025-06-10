@@ -47,6 +47,11 @@ def train(
             "-wd4", "--weight-decay",
             help="weight decay", rich_help_panel="model"
         ),
+        loss_type: str = Option(
+            'norm-mse',
+            "-lsst", "--loss-type",
+            help="loss type", rich_help_panel="model"
+        ),
         batch_size: int = Option(
             64,
             "-b", "--batch-size",
@@ -82,7 +87,8 @@ def train(
         student_model_name,
         optimizer=optimizer,
         learning_rate=learning_rate,
-        weight_decay=weight_decay
+        weight_decay=weight_decay,
+        loss_type=loss_type
     )
 
     checkpoints = ModelCheckpoint(monitor="train/loss_epoch", save_last=True)
