@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, Ri
 from pytorch_lightning.strategies import DDPStrategy
 
 from app.dataset import EnKoDataModule
-from app.module import EnKoDistillationModule
+from app.module3 import EnKoDistillationModule
 
 cmd = Typer()
 
@@ -20,7 +20,7 @@ def train(
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "lassl/roberta-ko-small",
+            "google/siglip2-base-patch16-224",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),

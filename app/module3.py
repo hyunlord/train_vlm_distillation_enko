@@ -1,9 +1,9 @@
 import math
 import inspect
 
-import pytorch_lightning as pl
-
 import torch
+import pytorch_lightning as pl
+import torch.nn.functional as F
 from torch.optim import SGD, Adam, AdamW
 
 from transformers import (
@@ -53,7 +53,7 @@ class EnKoDistillationModule(pl.LightningModule):
         student_ko_emb = self.student.get_text_features(**student_ko_batch)
         student_en_emb = self.student.get_text_features(**student_en_batch)
         teacher_en_emb = self.teacher.get_text_features(**teacher_en_batch)
-
+        '''
         target = torch.ones(student_ko_emb.size(0), device=self.device)
         st_loss = self.cosine_loss(student_ko_emb, teacher_en_emb, target)
         en_loss = self.cosine_loss(student_en_emb, teacher_en_emb, target)
@@ -63,7 +63,7 @@ class EnKoDistillationModule(pl.LightningModule):
         teacher_en_emb_norm = F.normalize(teacher_en_emb, p=2, dim=1)
         st_loss = self.mse(student_ko_emb_norm, teacher_en_emb_norm)
         en_loss = self.mse(student_en_emb_norm, teacher_en_emb_norm)
-        
+        '''
         st_loss = self.mse(student_ko_emb, teacher_en_emb)
         en_loss = self.mse(student_en_emb, teacher_en_emb)
         '''
