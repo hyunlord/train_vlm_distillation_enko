@@ -166,7 +166,7 @@ class EnKoDistillationModule(pl.LightningModule):
         return optimizer
 
     def on_train_epoch_end(self):
-        self.save(f"save/siglip2base_siglip2base_cosine_epoch-{self.current_epoch}")
+        self.save(f"save/siglip2base_siglip2base_lora_norm-mse_epoch-{self.current_epoch}")
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
