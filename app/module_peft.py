@@ -43,10 +43,6 @@ class EnKoDistillationModule(pl.LightningModule):
         self.mse = torch.nn.MSELoss()
         self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
-        self.optimizer = optimizer
-        self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
-
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
         for param in teacher.parameters():
@@ -66,7 +62,7 @@ class EnKoDistillationModule(pl.LightningModule):
             lora_dropout=self.hparams.lora_dropout,
             bias="none",
         )
-        student.text_model = get_peft_model(student.text_model, lora_config)
+        student = get_peft_model(student, lora_config)
         return teacher, student
 
     def print_trainable_parameters(self):
@@ -142,51 +138,32 @@ class EnKoDistillationModule(pl.LightningModule):
             return SGD
 
     def configure_optimizers(self):
-        params = list(self.student.text_model.named_parameters())
-
-        no_decay = ["bias", "LayerNorm.weight"]
-        optimizer_grouped_parameters = [
-            {
-                "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
-                "weight_decay": self.weight_decay,
-            },
-            {
-                "params": [p for n, p in params if any(nd in n for nd in no_decay)],
-                "weight_decay": 0.0,
-            },
-        ]
-
-        opt_class = self.create_optimizer(self.optimizer)
-        signiture = inspect.signature(opt_class)
-        opt_kwargs = {}
-        if "capturable" in signiture.parameters:
-            opt_kwargs["capturable"] = True
-        if "weight_decouple" in signiture.parameters:
-            opt_kwargs["weight_decouple"] = True
-        if "decouple_decay" in signiture.parameters:
-            opt_kwargs["decouple_decay"] = True
-
+        opt_class = self.create_optimizer(self.hparams.optimizer)
         optimizer = opt_class(
-            optimizer_grouped_parameters,
-            lr=self.learning_rate,
-            **opt_kwargs,
+            self.student.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=self.hparams.weight_decay,
         )
+        if self.trainer and self.trainer.datamodule:
+            num_devices = max(1, self.trainer.num_devices)
+            effective_batch_size = self.trainer.datamodule.batch_size * num_devices
+            steps_per_epoch = math.ceil(len(self.trainer.datamodule.train_dataloader().dataset) / effective_batch_size)
+            total_training_steps = steps_per_epoch * self.trainer.max_epochs
 
-        num_devices = max(1, self.trainer.num_devices)
-        effective_batch_size = self.trainer.datamodule.batch_size * num_devices
-        steps_per_epoch = math.ceil(len(self.trainer.datamodule.train_dataloader().dataset) / effective_batch_size)
-        total_training_steps = steps_per_epoch * self.trainer.max_epochs
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            self.learning_rate,
-            total_steps=total_training_steps,
-        )
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                self.hparams.learning_rate,
+                total_steps=total_training_steps,
+            )
+            scheduler_config = {"scheduler": scheduler, "interval": "step"}
+            return [optimizer], [scheduler_config]
+        return optimizer
 
-        scheduler_config = {"scheduler": scheduler, "interval": "step"}
-        return [optimizer], [scheduler_config]
+    def on_train_epoch_end(self):
+        self.save(f"save/siglip2base_siglip2base_cosine_epoch-{self.current_epoch}")
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
-        processor = AutoProcessor.from_pretrained(self.student_model_name)
+        processor = AutoProcessor.from_pretrained(self.hparams.student_model_name)
         processor.save_pretrained(save_dir)
 
