@@ -54,7 +54,6 @@ class EnKoDistillationModule(pl.LightningModule):
         teacher_en_emb = self.teacher_model.get_text_features(**teacher_en_batch)
 
         target = torch.ones(student_ko_emb.size(0), device=self.device)
-
         st_loss = self.cosine_loss(student_ko_emb, teacher_en_emb, target)
         en_loss = self.cosine_loss(student_en_emb, teacher_en_emb, target)
 
