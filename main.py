@@ -48,7 +48,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         loss_type: str = Option(
-            'cosine',
+            'norm-mse',
             "-lsst", "--loss-type",
             help="loss type", rich_help_panel="model"
         ),
