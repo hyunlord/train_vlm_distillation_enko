@@ -19,7 +19,7 @@ from transformers import (
 
 class EnKoDistillationModule(pl.LightningModule):
     def __init__(
-        self,
+         self,
         teacher_model_name: str,
         student_model_name: str,
         optimizer: str = "adamw",
@@ -41,8 +41,10 @@ class EnKoDistillationModule(pl.LightningModule):
                                                      self.hparams.student_model_name)
         self.print_trainable_parameters()
 
-        self.mse = torch.nn.MSELoss()
-        self.cosine_loss = torch.nn.CosineEmbeddingLoss()
+        if 'mse' in self.hparams.loss_type:
+            self.mse = torch.nn.MSELoss()
+        elif 'cosine' in self.hparams.loss_type:
+            self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
         teacher = AutoModel.from_pretrained(teacher_model_name)
@@ -97,10 +99,6 @@ class EnKoDistillationModule(pl.LightningModule):
             teacher_en_emb_norm = F.normalize(teacher_en_emb, p=2, dim=1)
             st_loss = self.mse(student_ko_emb_norm, teacher_en_emb_norm)
             en_loss = self.mse(student_en_emb_norm, teacher_en_emb_norm)
-        else:
-            st_loss = self.mse(student_ko_emb, teacher_en_emb)
-            en_loss = self.mse(student_en_emb, teacher_en_emb)
-
         loss = st_loss + en_loss
         loss_dict = {
             "loss": loss,
