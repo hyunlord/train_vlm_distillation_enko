@@ -1,5 +1,5 @@
+import os
 import math
-import inspect
 from loguru import logger
 
 import torch
@@ -172,4 +172,9 @@ class EnKoDistillationModule(pl.LightningModule):
         self.student.save_pretrained(save_dir)
         processor = AutoProcessor.from_pretrained(self.hparams.student_model_name)
         processor.save_pretrained(save_dir)
+
+        chat_template_path = os.path.join(save_dir, "chat_template.jinja")
+        if os.path.exists(chat_template_path):
+            os.remove(chat_template_path)
+            print(f"불필요한 '{chat_template_path}' 파일을 삭제했습니다.")
 
