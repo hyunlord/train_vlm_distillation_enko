@@ -91,7 +91,13 @@ def train(
         loss_type=loss_type
     )
 
-    checkpoints = ModelCheckpoint(monitor="train/loss_epoch", save_last=True)
+    checkpoints = ModelCheckpoint(
+        monitor="val/loss",
+        mode="min",
+        save_last=True,
+        save_top_k=3,
+        filename="{epoch}-{val_loss:.4f}"
+    )
     callbacks = [checkpoints, RichProgressBar(), LearningRateMonitor()]
     if seed is not None:
         pl.seed_everything(seed)
