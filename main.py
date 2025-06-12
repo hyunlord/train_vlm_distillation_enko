@@ -96,7 +96,7 @@ def train(
         mode="min",
         save_last=True,
         save_top_k=3,
-        filename="{epoch}-{val_loss:.4f}"
+        filename="{epoch}-{val_loss:.8f}"
     )
     callbacks = [checkpoints, RichProgressBar(), LearningRateMonitor()]
     if seed is not None:
