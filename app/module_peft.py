@@ -47,12 +47,12 @@ class EnKoDistillationModule(pl.LightningModule):
             self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
     def init_model(self, teacher_model_name: str, student_model_name: str):
-        teacher = AutoModel.from_pretrained(teacher_model_name)
+        teacher = AutoModel.from_pretrained(teacher_model_name, torch_dtype=torch.bfloat16)
         for param in teacher.parameters():
             param.requires_grad = False
         teacher.eval()
 
-        student = AutoModel.from_pretrained(student_model_name)
+        student = AutoModel.from_pretrained(student_model_name, torch_dtype=torch.bfloat16)
         for param in student.vision_model.parameters():
             param.requires_grad = False
 
