@@ -15,12 +15,12 @@ cmd = Typer()
 @cmd.command()
 def train(
         teacher_model_name: str = Option(
-            "google/siglip2-base-patch16-224",
+            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
             "-t", "--teacher",
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "google/siglip2-base-patch16-224",
+            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
@@ -48,7 +48,7 @@ def train(
             help="weight decay", rich_help_panel="model"
         ),
         loss_type: str = Option(
-            'norm-mse',
+            'cosine',
             "-lsst", "--loss-type",
             help="loss type", rich_help_panel="model"
         ),
@@ -62,7 +62,7 @@ def train(
             help="num_workers", rich_help_panel="train"
         ),
         max_epochs: int = Option(
-            5,
+            3,
             help="max_epochs", rich_help_panel="train"
         ),
         log_every_n_steps: int = Option(
