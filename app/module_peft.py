@@ -27,7 +27,7 @@ class EnKoDistillationModule(pl.LightningModule):
         weight_decay: float = 1e-4,
         loss_type: str = 'mse',
 
-        use_lora: bool = True,
+        use_lora: bool = False,
         lora_r: int = 8,
         lora_alpha: int = 16,
         lora_dropout: float = 0.05,

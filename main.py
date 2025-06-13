@@ -52,6 +52,11 @@ def train(
             "-lsst", "--loss-type",
             help="loss type", rich_help_panel="model"
         ),
+        use_lora: bool = Option(
+            False,
+            "-ul", "--use-lora",
+            help="use lora", rich_help_panel="model"
+        ),
         batch_size: int = Option(
             32,
             "-b", "--batch-size",
@@ -88,7 +93,8 @@ def train(
         optimizer=optimizer,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
-        loss_type=loss_type
+        loss_type=loss_type,
+        use_lora=use_lora
     )
 
     checkpoints = ModelCheckpoint(
