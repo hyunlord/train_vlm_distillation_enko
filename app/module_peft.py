@@ -27,6 +27,7 @@ class EnKoDistillationModule(pl.LightningModule):
         weight_decay: float = 1e-4,
         loss_type: str = 'mse',
 
+        use_lora: bool = True,
         lora_r: int = 8,
         lora_alpha: int = 16,
         lora_dropout: float = 0.05,
@@ -56,16 +57,17 @@ class EnKoDistillationModule(pl.LightningModule):
         for param in student.vision_model.parameters():
             param.requires_grad = False
 
-        if self.hparams.lora_target_modules is None:
-            self.hparams.lora_target_modules = ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
-        lora_config = LoraConfig(
-            r=self.hparams.lora_r,
-            lora_alpha=self.hparams.lora_alpha,
-            target_modules=self.hparams.lora_target_modules,
-            lora_dropout=self.hparams.lora_dropout,
-            bias="none",
-        )
-        student = get_peft_model(student, lora_config)
+        if self.hparams.use_lora:
+            if self.hparams.lora_target_modules is None:
+                self.hparams.lora_target_modules = ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
+            lora_config = LoraConfig(
+                r=self.hparams.lora_r,
+                lora_alpha=self.hparams.lora_alpha,
+                target_modules=self.hparams.lora_target_modules,
+                lora_dropout=self.hparams.lora_dropout,
+                bias="none",
+            )
+            student = get_peft_model(student, lora_config)
         return teacher, student
 
     def print_trainable_parameters(self):
@@ -165,7 +167,7 @@ class EnKoDistillationModule(pl.LightningModule):
         return optimizer
 
     def on_train_epoch_end(self):
-        self.save(f"save/siglip2-400m_siglip2-400m_lora_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+        self.save(f"save/siglip2base_siglip2base_{self.hparams.loss_type}_epoch-{self.current_epoch}")
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
