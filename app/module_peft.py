@@ -2,7 +2,6 @@ import os
 import math
 import inspect
 from loguru import logger
-from itertools import chain
 
 import torch
 import pytorch_lightning as pl
@@ -155,12 +154,7 @@ class EnKoDistillationModule(pl.LightningModule):
                 weight_decay=self.hparams.weight_decay,
             )
         else:
-            params = list(
-                chain(
-                    self.student.text_model.named_parameters(),
-                    self.student.text_projection.named_parameters(),
-                )
-            )
+            params = list(self.student.text_model.named_parameters())
             no_decay = ["bias", "LayerNorm.weight"]
             optimizer_grouped_parameters = [
                 {
@@ -205,6 +199,7 @@ class EnKoDistillationModule(pl.LightningModule):
 
     def on_train_epoch_end(self):
         self.save(f"save/test_siglip2base_siglip2base_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+        #self.save(f"save/siglip2-so400m_siglip2-so400m_{self.hparams.loss_type}_epoch-{self.current_epoch}")
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
