@@ -1,6 +1,8 @@
 import os
 import math
+import inspect
 from loguru import logger
+from itertools import chain
 
 import torch
 import pytorch_lightning as pl
@@ -145,12 +147,47 @@ class EnKoDistillationModule(pl.LightningModule):
             return SGD
 
     def configure_optimizers(self):
-        opt_class = self.create_optimizer(self.hparams.optimizer)
-        optimizer = opt_class(
-            self.student.parameters(),
-            lr=self.hparams.learning_rate,
-            weight_decay=self.hparams.weight_decay,
-        )
+        if self.hparams.use_lora:
+            opt_class = self.create_optimizer(self.hparams.optimizer)
+            optimizer = opt_class(
+                self.student.parameters(),
+                lr=self.hparams.learning_rate,
+                weight_decay=self.hparams.weight_decay,
+            )
+        else:
+            params = list(
+                chain(
+                    self.student.text_model.named_parameters(),
+                    self.student.text_projection.named_parameters(),
+                )
+            )
+            no_decay = ["bias", "LayerNorm.weight"]
+            optimizer_grouped_parameters = [
+                {
+                    "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
+                    "weight_decay": self.weight_decay,
+                },
+                {
+                    "params": [p for n, p in params if any(nd in n for nd in no_decay)],
+                    "weight_decay": 0.0,
+                },
+            ]
+
+            opt_class = self.create_optimizer(self.optimizer)
+            signiture = inspect.signature(opt_class)
+            opt_kwargs = {}
+            if "capturable" in signiture.parameters:
+                opt_kwargs["capturable"] = True
+            if "weight_decouple" in signiture.parameters:
+                opt_kwargs["weight_decouple"] = True
+            if "decouple_decay" in signiture.parameters:
+                opt_kwargs["decouple_decay"] = True
+
+            optimizer = opt_class(
+                optimizer_grouped_parameters,
+                lr=self.learning_rate,
+                **opt_kwargs,
+            )
         if self.trainer and self.trainer.datamodule:
             num_devices = max(1, self.trainer.num_devices)
             effective_batch_size = self.trainer.datamodule.batch_size * num_devices
