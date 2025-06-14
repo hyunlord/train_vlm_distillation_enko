@@ -112,7 +112,7 @@ def train(
     logger.debug("set trainer")
     trainer = pl.Trainer(
         accelerator="auto",
-        precision=32,
+        precision=16,
         max_epochs=max_epochs,
         callbacks=callbacks,
         log_every_n_steps=log_every_n_steps,
