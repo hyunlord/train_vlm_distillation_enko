@@ -159,7 +159,7 @@ class EnKoDistillationModule(pl.LightningModule):
             optimizer_grouped_parameters = [
                 {
                     "params": [p for n, p in params if not any(nd in n for nd in no_decay)],
-                    "weight_decay": self.weight_decay,
+                    "weight_decay": self.hparams.weight_decay,
                 },
                 {
                     "params": [p for n, p in params if any(nd in n for nd in no_decay)],
@@ -167,7 +167,7 @@ class EnKoDistillationModule(pl.LightningModule):
                 },
             ]
 
-            opt_class = self.create_optimizer(self.optimizer)
+            opt_class = self.create_optimizer(self.hparams.optimizer)
             signiture = inspect.signature(opt_class)
             opt_kwargs = {}
             if "capturable" in signiture.parameters:
@@ -179,7 +179,7 @@ class EnKoDistillationModule(pl.LightningModule):
 
             optimizer = opt_class(
                 optimizer_grouped_parameters,
-                lr=self.learning_rate,
+                lr=self.hparams.learning_rate,
                 **opt_kwargs,
             )
         if self.trainer and self.trainer.datamodule:
