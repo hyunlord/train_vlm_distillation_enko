@@ -15,12 +15,12 @@ cmd = Typer()
 @cmd.command()
 def train(
         teacher_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
+            "google/siglip2-base-patch16-224",
             "-t", "--teacher",
             help="name of teacher model", rich_help_panel="model"
         ),
         student_model_name: str = Option(
-            "/hanmail/.cache/gitlfs/siglip2-so400m-patch14-384",
+            "google/siglip2-base-patch16-224",
             "-s", "--student",
             help="name of student model", rich_help_panel="model"
         ),
@@ -68,7 +68,7 @@ def train(
             help="num_workers", rich_help_panel="train"
         ),
         max_epochs: int = Option(
-            3,
+            5,
             help="max_epochs", rich_help_panel="train"
         ),
         log_every_n_steps: int = Option(
