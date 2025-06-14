@@ -53,8 +53,9 @@ def train(
             help="loss type", rich_help_panel="model"
         ),
         use_lora: bool = Option(
+            False,
             "-ul", "--use-lora",
-            action='store_true',
+            is_flag=True,
             help="use lora", rich_help_panel="model"
         ),
         batch_size: int = Option(
