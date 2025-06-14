@@ -56,16 +56,17 @@ class EnKoDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection",
                                      split="train+validation")
-        ds_splits = ds.train_test_split(test_size=self.val_split_ratio, seed=42)
-        train_ds = ds_splits['train']
-        val_ds = ds_splits['test']
+        #ds_splits = ds.train_test_split(test_size=self.val_split_ratio, seed=42)
+        #train_ds = ds_splits['train']
+        #val_ds = ds_splits['test']
 
         teacher_tokenizer = AutoTokenizer.from_pretrained(self.teacher_tokenizer_name)
         student_tokenizer = AutoTokenizer.from_pretrained(self.student_tokenizer_name)
         self.data_collator = EnKoDataCollator(teacher_tokenizer, student_tokenizer)
 
-        self.train_dataset = EnKoDataset(train_ds, teacher_tokenizer, student_tokenizer)
-        self.val_dataset = EnKoDataset(val_ds, teacher_tokenizer, student_tokenizer)
+        self.train_dataset = EnKoDataset(ds, teacher_tokenizer, student_tokenizer)
+        #self.train_dataset = EnKoDataset(train_ds, teacher_tokenizer, student_tokenizer)
+        #self.val_dataset = EnKoDataset(val_ds, teacher_tokenizer, student_tokenizer)
         
     def train_dataloader(self):
         return DataLoader(
