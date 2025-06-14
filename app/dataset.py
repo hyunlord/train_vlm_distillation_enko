@@ -78,6 +78,7 @@ class EnKoDataModule(pl.LightningDataModule):
             shuffle=True
         )
 
+    '''
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
@@ -87,3 +88,4 @@ class EnKoDataModule(pl.LightningDataModule):
             pin_memory=True,
             shuffle=False
         )
+    '''
