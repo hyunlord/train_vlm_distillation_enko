@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, Ri
 from pytorch_lightning.strategies import DDPStrategy
 
 from app.dataset import EnKoDataModule
-from app.module import EnKoDistillationModule
+from app.module3 import EnKoDistillationModule
 
 cmd = Typer()
 
