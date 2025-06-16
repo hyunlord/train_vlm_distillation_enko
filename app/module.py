@@ -153,8 +153,8 @@ class EnKoDistillationModule(pl.LightningModule):
         scheduler_config = {"scheduler": scheduler, "interval": "step"}
         return [optimizer], [scheduler_config]
 
-    def epoch_end(self):
-        self.save()
+    def on_train_epoch_end(self):
+        self.save(f"save/test_siglip2base_siglip2base_{self.hparams.loss_type}_epoch-{self.current_epoch}")
 
     def save(self, save_dir: str = "save/my_model"):
         self.combined_model.save_pretrained(save_dir)

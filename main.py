@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, Ri
 from pytorch_lightning.strategies import DDPStrategy
 
 from app.dataset import EnKoDataModule
-from app.module_peft import EnKoDistillationModule
+from app.module import EnKoDistillationModule
 
 cmd = Typer()
 
@@ -68,7 +68,7 @@ def train(
             help="num_workers", rich_help_panel="train"
         ),
         max_epochs: int = Option(
-            5,
+            1,
             help="max_epochs", rich_help_panel="train"
         ),
         log_every_n_steps: int = Option(
@@ -93,10 +93,18 @@ def train(
         student_model_name,
         optimizer=optimizer,
         learning_rate=learning_rate,
+        weight_decay=weight_decay
+    )
+    '''
+    module = EnKoDistillationModule(
+        teacher_model_name,
+        student_model_name,
+        optimizer=optimizer,
+        learning_rate=learning_rate,
         weight_decay=weight_decay,
         loss_type=loss_type,
         use_lora=use_lora
-    )
+    )'''
 
     checkpoints = ModelCheckpoint(
         monitor="val/loss",
