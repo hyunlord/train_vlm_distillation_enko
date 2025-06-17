@@ -96,6 +96,7 @@ class EnKoDistillationModule(pl.LightningModule):
                 "val/loss_st": loss["loss_st"],
                 "val/loss_en": loss["loss_en"],
             },
+            on_step=True,
             on_epoch=True,
         )
         return loss["loss"]
