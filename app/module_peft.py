@@ -198,8 +198,12 @@ class EnKoDistillationModule(pl.LightningModule):
         return optimizer
 
     def on_train_epoch_end(self):
-        self.save(f"save/test_siglip2base_siglip2base_{self.hparams.loss_type}_epoch-{self.current_epoch}")
-        #self.save(f"save/siglip2-so400m_siglip2-so400m_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+        #self.save(f"save/test_siglip2base_siglip2base_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+        if self.hparams.use_lora:
+            self.save(f"save/siglip2-so400m_siglip2-so400m_lora_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+        else:
+            self.save(f"save/siglip2-so400m_siglip2-so400m_{self.hparams.loss_type}_epoch-{self.current_epoch}")
+
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
