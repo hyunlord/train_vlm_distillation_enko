@@ -55,7 +55,7 @@ class EnKoDataModule(pl.LightningDataModule):
         
     def setup(self, stage=None):
         ds: HFDataset = load_dataset("hyunlord/aihub_ko-en_parallel_corpus_collection",
-                                     split="train+validation")
+                                     split="train[:1000]")
         #ds_splits = ds.train_test_split(test_size=self.val_split_ratio, seed=42)
         #train_ds = ds_splits['train']
         #val_ds = ds_splits['test']

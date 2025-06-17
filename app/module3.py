@@ -158,6 +158,5 @@ class EnKoDistillationModule(pl.LightningModule):
 
     def save(self, save_dir: str = "save/my_model"):
         self.student.save_pretrained(save_dir)
-        processor = AutoProcessor.from_pretrained(self.student_model_name)
+        processor = AutoProcessor.from_pretrained(self.student_model_name, use_fast=True)
         processor.save_pretrained(save_dir)
-
