@@ -91,7 +91,7 @@ def train(
         batch_size=batch_size,
         num_workers=num_workers
     )
-    '''
+
     module = EnKoDistillationModule(
         teacher_model_name,
         student_model_name,
@@ -109,7 +109,7 @@ def train(
         loss_type=loss_type,
         use_lora=use_lora
     )
-
+    '''
     checkpoints = ModelCheckpoint(
         monitor="val/loss",
         mode="min",
