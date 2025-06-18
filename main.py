@@ -91,14 +91,6 @@ def train(
         batch_size=batch_size,
         num_workers=num_workers
     )
-
-    module = EnKoDistillationModule(
-        teacher_model_name,
-        student_model_name,
-        optimizer=optimizer,
-        learning_rate=learning_rate,
-        weight_decay=weight_decay
-    )
     '''
     module = EnKoDistillationModule(
         teacher_model_name,
@@ -109,7 +101,6 @@ def train(
         loss_type=loss_type,
         use_lora=use_lora
     )
-    '''
     checkpoints = ModelCheckpoint(
         monitor="val/loss",
         mode="min",
@@ -117,6 +108,16 @@ def train(
         save_top_k=3,
         filename="{epoch}-{val_loss:.8f}"
     )
+    '''
+    module = EnKoDistillationModule(
+        teacher_model_name,
+        student_model_name,
+        optimizer=optimizer,
+        learning_rate=learning_rate,
+        weight_decay=weight_decay
+    )
+    checkpoints = ModelCheckpoint(monitor="train/loss_epoch", save_last=True)
+    
     callbacks = [checkpoints, RichProgressBar(), LearningRateMonitor()]
     if seed is not None:
         pl.seed_everything(seed)
